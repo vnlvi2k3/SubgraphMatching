@@ -1,0 +1,10 @@
+{
+    "number_source": 100,
+    "number_subgraph_per_source": 100,
+    "avg_source_size": 60,
+    "std_source_size": 10,
+    "avg_degree": 3.5,
+    "std_degree": 0.5,
+    "number_label_node": 20,
+    "number_label_edge": 10
+}

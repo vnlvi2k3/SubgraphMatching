@@ -1,0 +1,11 @@
+__pycache__
+*_iso
+*_non
+*.lg
+.DS_Store
+log/*/*.txt
+results/*.csv
+save/*.pt
+save/*/*.pt
+data_real/datasets
+data_synthesis/datasets
