@@ -211,7 +211,6 @@ def main(args):
         st_eval = time.time()
 
         for sample in tqdm(test_dataloader):
-            sam = sam + 1
             H, A1, A2, M, S, Y, V, P, Q, _ = sample
             H, A1, A2, M, S, Y, V = (
                 H.to(device),
@@ -228,73 +227,64 @@ def main(args):
                 X=(H, A1, A2, V), attn_masking=(M, S), training=True
             )
             predict_mapping = model.get_refined_adjs2((H, A1, A2, V))
-
-            
             
             for batch_idx, i in enumerate(pred):
-
-                valid = V[batch_idx]
-                n1 = len(valid[valid==1])
-
-                test_true_mapping = M[batch_idx].data.cpu().numpy()
-                test_pred_mapping = predict_mapping[batch_idx].data.cpu().numpy()
-
-                shape = test_true_mapping.shape[0]
-                test_true_mapping = test_true_mapping.reshape((1,shape, shape))
-                test_pred_mapping = test_pred_mapping.reshape((1,shape, shape))
-
-                for mapping_true, mapping_pred in zip(test_true_mapping, test_pred_mapping):
-                    gt_mapping = {}
-                    x_coord, y_coord = np.where(mapping_true > 0)
-                    for x, y in zip(x_coord, y_coord):
-                        if x < y:
-                            gt_mapping[x] = [y]  # Subgraph node: Graph node
-
-                    pred_mapping = defaultdict(lambda: {})
-                    x_coord, y_coord = np.where(mapping_pred > 0)
-
-                    for x, y in zip(x_coord, y_coord):
-                        if x < y:
-                            if y in pred_mapping[x]:
-                                pred_mapping[x][y] = (
-                                    pred_mapping[x][y] + mapping_pred[x][y]
-                                ) / 2
-                            else:
-                                pred_mapping[x][y] = mapping_pred[
-                                    x, y
-                                ]  # Subgraph node: Graph node
-                        else:
-                            if x in pred_mapping[y]:
-                                pred_mapping[y][x] = (
-                                    pred_mapping[y][x] + mapping_pred[x][y]
-                                ) / 2
-                            else:
-                                pred_mapping[y][x] = mapping_pred[
-                                    x, y
-                                ]  # Subgraph node: Graph node
-
-                sorted_predict_mapping = defaultdict(lambda: [])
-                sorted_predict_mapping.update(
-                    {
-                        k: [
-                            y[0]
-                            for y in sorted(
-                                [(n, prob) for n, prob in v.items()],
-                                key=lambda x: x[1],
-                                reverse=True,
-                            )
-                        ]
-                        for k, v in pred_mapping.items()
-                    }
-                )
-                
-                for k, v in sorted_predict_mapping.items():
-                    sorted_predict_mapping[k] = [item for item in v if item >= n1]
-
-
                 if i.item() >= 0.5:
+                    n1 = len(V[batch_idx][V[batch_idx]==1])
 
-                    is_iso = 0
+                    test_true_mapping = M[batch_idx].unsqueeze(0).data.cpu().numpy()
+                    test_pred_mapping = predict_mapping[batch_idx].unsqueeze(0).data.cpu().numpy()
+
+
+                    for mapping_true, mapping_pred in zip(test_true_mapping, test_pred_mapping):
+                        gt_mapping = {}
+                        x_coord, y_coord = np.where(mapping_true > 0)
+                        for x, y in zip(x_coord, y_coord):
+                            if x < y:
+                                gt_mapping[x] = [y]  # Subgraph node: Graph node
+
+                        pred_mapping = defaultdict(lambda: {})
+                        x_coord, y_coord = np.where(mapping_pred > 0)
+
+                        for x, y in zip(x_coord, y_coord):
+                            if x < y:
+                                if y in pred_mapping[x]:
+                                    pred_mapping[x][y] = (
+                                        pred_mapping[x][y] + mapping_pred[x][y]
+                                    ) / 2
+                                else:
+                                    pred_mapping[x][y] = mapping_pred[
+                                        x, y
+                                    ]  # Subgraph node: Graph node
+                            else:
+                                if x in pred_mapping[y]:
+                                    pred_mapping[y][x] = (
+                                        pred_mapping[y][x] + mapping_pred[x][y]
+                                    ) / 2
+                                else:
+                                    pred_mapping[y][x] = mapping_pred[
+                                        x, y
+                                    ]  # Subgraph node: Graph node
+
+                    sorted_predict_mapping = defaultdict(lambda: [])
+                    sorted_predict_mapping.update(
+                        {
+                            k: [
+                                y[0]
+                                for y in sorted(
+                                    [(n, prob) for n, prob in v.items()],
+                                    key=lambda x: x[1],
+                                    reverse=True,
+                                )
+                            ]
+                            for k, v in pred_mapping.items()
+                        }
+                    )
+                    
+                    for k, v in sorted_predict_mapping.items():
+                        sorted_predict_mapping[k] = [item for item in v if item >= n1]
+
+                    is_iso = False
                     topk = 1
 
                     mapping_combinations = []
@@ -316,24 +306,9 @@ def main(args):
 
                         rmsd = kabsch_rmsd(sub_coords, graph_coords)
 
-                        if rmsd < 1e-3:
-                            is_iso = 1
+                        if rmsd <= 1e-3:
+                            is_iso = True
                             break
-                        
-                        #debug
-                        # true_idx = [gt_mapping[i][0] - n1 for i in gt_mapping]
-                        # true_sub = P[batch_idx][:n1]
-                        # true_graph = Q[batch_idx][true_idx]
-                        # if Y[batch_idx].item() == 1.0:
-                        #     rmsd1 = kabsch_rmsd(true_sub, true_graph)
-                        # else:
-                        #     rmsd1 = 0.
-
-                        # print("RMSD of predict\t", rmsd, "True RMSD:\t", rmsd1)
-                        # print("batch id:\t", batch_idx,"sample number:\t", sam, "true:\t", Y[batch_idx].item(), "predict", pred[batch_idx].item())
-                        # print("number of node:", n1)
-                        # print("\n mapping idx:", mapping_idx)
-                        # print("\n true mapping", true_idx)
 
                     if is_iso:
                         pred[batch_idx] = torch.tensor([1.], device=device)
