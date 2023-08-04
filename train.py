@@ -18,7 +18,7 @@ from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--lr", help="learning rate", type=float, default=0.0001)
-parser.add_argument("--epoch", help="epoch", type=int, default=40)
+parser.add_argument("--epoch", help="epoch", type=int, default=20)
 parser.add_argument("--ngpu", help="number of gpu", type=int, default=1)
 parser.add_argument("--dataset", help="dataset", type=str, default="tiny")
 parser.add_argument("--batch_size", help="batch_size", type=int, default=32)
@@ -75,6 +75,7 @@ parser.add_argument("--tag", help="Additional tag for saving and logging folder"
 
 def main(args):
     # hyper parameters
+
     num_epochs = args.epoch
     lr = args.lr
     data_path = os.path.join(args.data_path, args.dataset)
@@ -164,6 +165,10 @@ def main(args):
         "epoch,train_losses,test_losses,train_roc,test_roc,train_time,test_time\n"
     )
 
+    trainacc = []
+    testacc = []
+    fulltime = 0
+
     for epoch in range(num_epochs):
         print("EPOCH", epoch)
         st = time.time()
@@ -227,8 +232,11 @@ def main(args):
                 X=(H, A1, A2, V), attn_masking=(M, S), training=True
             )
             predict_mapping = model.get_refined_adjs2((H, A1, A2, V))
+
+            
             
             for batch_idx, i in enumerate(pred):
+                
                 if i.item() >= 0.5:
                     n1 = len(V[batch_idx][V[batch_idx]==1])
 
@@ -284,33 +292,40 @@ def main(args):
                     for k, v in sorted_predict_mapping.items():
                         sorted_predict_mapping[k] = [item for item in v if item >= n1]
 
-                    is_iso = False
-                    topk = 1
+                    is_iso = 0
+                    topk = 9 
 
-                    mapping_combinations = []
-                    S = dict(list(sorted_predict_mapping.items())[:n1])
-                    
-                    if n1 > 0:
-                        for i in S:
-                            S[i] = S[i][:topk]
-                        _ , values = zip(*S.items())
-                        for row in itertools.product(*values):
-                            mapping_combinations.append(row)
+                    div = 3
+                    upper = int(np.ceil(n1/div))
+                    for i in range(upper):
+                        mapping_combinations = []
 
-                    mapping_combinations = [list(i) for i in mapping_combinations]
+                        if i == upper - 1:
+                            S = dict(list(sorted_predict_mapping.items())[i*div : n1])
+                            sub_coords = P[batch_idx][i*div : n1]
+                        else:
+                            S = dict(list(sorted_predict_mapping.items())[i*div : (i+1)*div])
+                            sub_coords = P[batch_idx][i*div : (i+1)*div]
 
-                    for mapping_idx in mapping_combinations:
-                        mapping_idx = [mapping_idx[i] - n1 for i in range(len(mapping_idx))]
-                        sub_coords = P[batch_idx][:n1]
-                        graph_coords = Q[batch_idx][mapping_idx]
+                        if n1 > 0:
+                            for i in S:
+                                S[i] = S[i][:topk]
+                            _ , values = zip(*S.items())
+                            for row in itertools.product(*values):
+                                mapping_combinations.append(row)
+                            mapping_combinations = [list(i) for i in mapping_combinations]
 
-                        rmsd = kabsch_rmsd(sub_coords, graph_coords)
+                        for mapping_idx in mapping_combinations:
+                            mapping_idx = [mapping_idx[j] - n1 for j in range(len(mapping_idx))]
+                            graph_coords = Q[batch_idx][mapping_idx]
 
-                        if rmsd <= 1e-3:
-                            is_iso = True
-                            break
+                            rmsd = kabsch_rmsd(sub_coords, graph_coords)
 
-                    if is_iso:
+                            if rmsd <= 1e-3:
+                                is_iso = is_iso + 1
+                                break
+
+                    if is_iso == upper:
                         pred[batch_idx] = torch.tensor([1.], device=device)
                     else:
                         pred[batch_idx] = torch.tensor([0.], device=device)
@@ -321,6 +336,7 @@ def main(args):
             test_losses.append(loss.data.cpu().item())
             test_true.append(Y.data.cpu().numpy())
             test_pred.append(pred.data.cpu().numpy())
+
 
         end = time.time()
 
@@ -335,6 +351,10 @@ def main(args):
 
         train_roc = roc_auc_score(train_true, train_pred)
         test_roc = roc_auc_score(test_true, test_pred)
+
+        trainacc.append(train_roc)
+        testacc.append(test_roc)
+        fulltime = fulltime + end - st
 
         print(
             "%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f"
@@ -365,6 +385,14 @@ def main(args):
 
         name = save_dir + "/save_" + str(epoch) + ".pt"
         torch.save(model.state_dict(), name)
+
+    max_train_acc = np.max(np.array(trainacc))
+    max_test_acc = np.max(np.array(testacc))
+    mean_train_acc = np.mean(np.array(trainacc))
+    mean_test_acc = np.mean(np.array(testacc))
+
+    print("Full time:\t", fulltime, "max train acc:\t", max_train_acc, "max test acc:\t",
+           max_test_acc, "mean train acc:\t", mean_train_acc, "mean test acc:\t", mean_test_acc)
 
     log_file.close()
 
