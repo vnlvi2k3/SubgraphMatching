@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from pcc_layers import IEGMN_Layer
+from ppc_layers import IEGMN_Layer
 
 from layers import GAT_gate
 
