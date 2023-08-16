@@ -203,22 +203,16 @@ def main(args):
         model.train()
         for sample in tqdm(train_dataloader):
             model.zero_grad()
-            graph, cross_graph, M, S, Y, V, _ = sample
-            graph, cross_graph, M, S, Y, V = (
-                graph.to(device),
-                cross_graph.to(device),
-                M.to(device),
-                S.to(device),
-                Y.to(device),
-                V.to(device),
-            )
+            graph = sample
+            graph = graph.to(device)
 
             # Train neural network
-            pred, attn_loss, rmsd_loss, pairdst_loss = model(
-                X=(graph, cross_graph, V), attn_masking=(M, S), training=True
-            )
+            # pred, attn_loss, rmsd_loss, pairdst_loss = model(
+            #     X=(graph, cross_graph, V), attn_masking=(M, S), training=True
+            # )
                         
-            loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
+            # loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
+            loss = 0
             loss.backward()
             optimizer.step()
 
