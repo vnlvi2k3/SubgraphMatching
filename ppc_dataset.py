@@ -140,6 +140,7 @@ class UnderSampler(Sampler):
 
 def collate_fn(batch):
     max_natoms = max([item["graph"].number_of_nodes() for item in batch if item is not None])
+    print("max atoms:", max_natoms, "\n")
 
     M = np.zeros((len(batch), max_natoms, max_natoms))
     S = np.zeros((len(batch), max_natoms, max_natoms))
@@ -151,7 +152,7 @@ def collate_fn(batch):
     keys = []
 
     for i in range(len(batch)):
-        natom = len(batch[i]["H"])
+        natom = batch["graph"].number_of_nodes()
 
         M[i, :natom, :natom] = batch[i]["mapping"]
         S[i, :natom, :natom] = batch[i]["same_label"]
