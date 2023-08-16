@@ -207,19 +207,20 @@ def main(args):
             graph, cross_graph, M, S, Y, V, _ = sample
             print("batch num nodes:\n", graph.batch_num_nodes())
 
-            graph = graph.to(device)
-            cross_graph = cross_graph.to(device)
-            M = M.to(device)
-            S = S.to(device)
-            Y = Y.to(device)
-            V = V.to(device) 
+            # graph = graph.to(device)
+            # cross_graph = cross_graph.to(device)
+            # M = M.to(device)
+            # S = S.to(device)
+            # Y = Y.to(device)
+            # V = V.to(device) 
 
-            # Train neural network
-            pred, attn_loss, rmsd_loss, pairdst_loss = model(
-                X=(graph, cross_graph, V), attn_masking=(M, S), training=True
-            )
+            # # Train neural network
+            # pred, attn_loss, rmsd_loss, pairdst_loss = model(
+            #     X=(graph, cross_graph, V), attn_masking=(M, S), training=True
+            # )
                         
-            loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
+            # loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
+            loss = 0
             loss.backward()
             optimizer.step()
 
