@@ -72,8 +72,6 @@ class BaseDataset(Dataset):
         graph_pt = dgl.graph((src_lst, dst_lst))
         src_lst_cross, dst_lst_cross = np.where(agg_adj2==1)
         graph_pt_cross = dgl.graph((src_lst_cross, dst_lst_cross))
-        graph_pt.ndata['feat'] = torch.from_numpy(H).float()
-        graph_pt_cross.ndata['feat'] = torch.from_numpy(H).float()
         X_pt = []
         for id in m1.nodes:
             X_pt.append(m1.nodes[id]["coords"])
@@ -81,8 +79,6 @@ class BaseDataset(Dataset):
             X_pt.append(m2.nodes[id]["coords"])
         X_pt = np.vstack(X_pt)
         X_pt = torch.from_numpy(X_pt).float()
-        graph_pt.ndata['coords'] = X_pt
-        graph_pt_cross.ndata['coords'] = X_pt
 
         # node indice for aggregation
         valid = np.zeros((n1 + n2,))
