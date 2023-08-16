@@ -81,3 +81,4 @@ graph_pt_cross.ndata['coords'] = X_pt
 device = torch.device("cuda")
 bg = dgl.batch([graph_pt, graph_pt_cross])
 bg = bg.to(device)
+print(bg.batch_num_nodes())
