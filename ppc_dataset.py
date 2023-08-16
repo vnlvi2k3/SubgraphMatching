@@ -102,6 +102,7 @@ class BaseDataset(Dataset):
         # if n1+n2 > 300 : return None
         sample = {
             "graph": graph_pt,
+            "cross_graph": graph_pt_cross,
         }
 
         return sample
@@ -128,13 +129,15 @@ class UnderSampler(Sampler):
         return self.num_samples
 
 
-def collate_fn(batch):
-
+def collate_fn(data):
+    graph_pt, graph_pt_cross = map(list, zip(*data))
     graph = []
-
-    for i in range(len(batch)):
-        graph.append(batch[i]["graph"])
+    cross_graph = []
+    for i, g in enumerate(graph_pt):
+        gc = graph_pt_cross[i]
+        graph.append(g)
+        cross_graph.append(gc)
 
     graph = dgl.batch(graph)
-
-    return graph
+    cross_graph = dgl.batch(graph)
+    return graph, cross_graph
