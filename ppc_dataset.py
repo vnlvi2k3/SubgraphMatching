@@ -152,7 +152,7 @@ def collate_fn(batch):
     keys = []
 
     for i in range(len(batch)):
-        natom = batch["graph"].number_of_nodes()
+        natom = batch[i]["graph"].number_of_nodes()
 
         M[i, :natom, :natom] = batch[i]["mapping"]
         S[i, :natom, :natom] = batch[i]["same_label"]
