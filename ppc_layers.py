@@ -94,8 +94,19 @@ def compute_cross_attention(queries, keys, values, mask, cross_msgs):
     a = mask * torch.mm(queries, torch.transpose(keys, 1, 0)) - 1000. * (1. - mask)
     a_x = torch.softmax(a, dim=1)  # i->j, NxM, a_x.sum(dim=1) = torch.ones(N)
     attention_x = torch.mm(a_x, values)  # (N,d)
-    return attention_x
+    return a_x, attention_x
 
+def get_features(batch_graph, n1):
+    sub_feats= []
+    graph_feats = []
+    bg_list = dgl.unbatch(batch_graph)
+    for i, g in enumerate(bg_list):
+        sub_feats.append(g.ndata["feat"][:n1[i]])
+        graph_feats.append(g.ndata["feat"][n1[i]:])
+
+    sub_feats = torch.vstack(sub_feats)
+    graph_feats = torch.vstack(graph_feats)
+    return sub_feats, graph_feats
 
 class IEGMN_Layer(nn.Module):
     def __init__(self, orig_h_feats_dim, h_feats_dim, out_feats_dim, args):
@@ -162,16 +173,19 @@ class IEGMN_Layer(nn.Module):
         return {'cat_feat': torch.cat([edges.src['feat'], edges.dst['feat']], dim=1)}
     
 
-    # def forward(self, lig_graph, coors_lig, h_feats_ligand, h_feats_receptor,
-    #             original_ligand_node_features, orig_coors_ligand):
                 
-    def forward(self, graph, coords, h_feats, original_node_features, original_coords, get_attention=False):
+    def forward(self, graph, coords, h_feats, original_node_features, original_coords,
+                 bacth_sub_numnode,  get_attention=False):
         with graph.local_scope():
+            #X_i, H_i : current node's coords and features
             graph.ndata['x_now'] = coords
-            graph.ndata['feat'] = h_feats  # first time set here
+            graph.ndata['feat'] = h_feats  
             
+            #Calculate X_rel = |x_i - x_j| ..... with (i,j) is edges of graph
             graph.apply_edges(fn.u_sub_v('x_now', 'x_now', 'x_rel')) 
             
+            #X_rel_mag =  exp(-||x_i - x_j||^2 / sigma) ..... sigma = 1.5 ** x for x = [0, 15]
+            #len(X_rel_mag = 15)
             x_rel_mag = graph.edata['x_rel']**2
             x_rel_mag = torch.sum(x_rel_mag, dim=1, keepdim=True)
             x_rel_mag = torch.cat([torch.exp(-x_rel_mag / sigma) for sigma in self.all_sigmas_dist], dim=-1)
@@ -179,25 +193,37 @@ class IEGMN_Layer(nn.Module):
             if not self.use_dist_in_layers:
                 x_rel_mag = x_rel_mag * 0.
                 
+            #cat_input_for_msg = (h_i, h_j, x_rel_mag)
             graph.apply_edges(self.apply_edges1)
-                
             cat_input_for_msg = torch.cat((graph.edata['cat_feat'], x_rel_mag), dim=-1)
             
+            #msg = mlp_edge(h_i, h_j, x_rel_mag)
             graph.edata['msg'] = self.edge_mlp(cat_input_for_msg)
             
-            mask = get_mask(graph.batch_num_nodes(), rec_graph.batch_num_nodes(), self.device)
+            #Calculate cross attention: 
+            #attention (N,M): attention of subgraph to graph     
+            #aggr_cross1 (N,d) =  attention (N,M) * value_subgraph (M,d)
+            #aggr_cross2 (M,d) =  attention.transpose() * value_subgraph (N,d)
+            #aggr_cross : concatenate aggr_cross1 and aggr_cross2 as a node data for big graph
+            #aggr_cross_msg(i) = sum_j a_{i,j} * h_j
+            mask = get_mask(bacth_sub_numnode, graph.batch_num_nodes(), self.device)
+            sub_feats, graph_feats = get_features(graph, bacth_sub_numnode)
+            attention, aggr_cross1 = compute_cross_attention(self.att_mlp_Q(sub_feats), self.att_mlp_K(graph_feats)
+                                                   , self.att_mlp_V(graph_feats), mask, self.cross_msgs) #(n x m), (n x d)
             
-            graph.ndata['aggr_cross_msg'] = compute_cross_attention(self.att_mlp_Q(h_feats),
-                                                                        self.att_mlp_K(h_feats_receptor),
-                                                                        self.att_mlp_V(h_feats_receptor),
-                                                                        mask,
-                                                                        self.cross_msgs)
+            _, aggr_cross2 = compute_cross_attention(self.att_mlp_Q(graph_feats), self.att_mlp_K(sub_feats)
+                                                   , self.att_mlp_V(sub_feats), mask.transpose(0,1), self.cross_msgs) #(m x n), (m x d)
             
+            graph.ndata['aggr_cross_msg'] = torch.cat((aggr_cross1, aggr_cross2), dim=0)
+
+            #edge_coef : phi^x(m_{i->j})
             edge_coef = self.coors_mlp(graph.edata['msg'])
+            #data[x_moment] = (x_i - x_j) * phi^x(m_{i->j})
             graph.edata['x_moment'] = graph.edata['x_rel']*edge_coef
             
+            #data[aggr_msg]: sum_j m_{i->j}
+            #data[x_update] : sum_j (x_i - x_j) * phi^x(m_{i->j}) : X_update coordinate
             graph.update_all(fn.copy_e('x_moment', 'm'), fn.mean('m', 'x_update'))
-            
             graph.update_all(fn.copy_e('msg', 'm'), fn.mean('m', 'aggr_msg'))
             
             x_final = self.x_connection_init * original_coords + \
@@ -210,6 +236,7 @@ class IEGMN_Layer(nn.Module):
                                                 original_node_features),
                                                 dim=-1)
             
+            #calculate node update feature
             if self.h_feats_dim == self.out_feats_dim:
                 node_upd = self.skip_weight_h * self.node_mlp(input_node_upd) + \
                                 (1.-self.skip_weight_h) * h_feats
