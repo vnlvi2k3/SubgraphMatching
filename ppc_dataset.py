@@ -140,7 +140,6 @@ class UnderSampler(Sampler):
 
 def collate_fn(batch):
     max_natoms = max([item["graph"].number_of_nodes() for item in batch if item is not None])
-    print("max atoms:", max_natoms, "\n")
 
     M = np.zeros((len(batch), max_natoms, max_natoms))
     S = np.zeros((len(batch), max_natoms, max_natoms))
@@ -166,5 +165,7 @@ def collate_fn(batch):
     S = torch.from_numpy(S).float()
     Y = torch.from_numpy(Y).float()
     V = torch.from_numpy(V).float()
+    graph = dgl.batch(graph)
+    cross_graph = dgl.batch(cross_graph)
 
     return graph, cross_graph, M, S, Y, V, keys
