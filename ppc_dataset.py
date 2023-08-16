@@ -106,12 +106,6 @@ class BaseDataset(Dataset):
         # if n1+n2 > 300 : return None
         sample = {
             "graph": graph_pt,
-            "cross_graph": graph_pt_cross,
-            "Y": Y,
-            "V": valid,
-            "key": key,
-            "mapping": mapping_matrix,
-            "same_label": same_label_matrix,
         }
 
         return sample
@@ -139,33 +133,12 @@ class UnderSampler(Sampler):
 
 
 def collate_fn(batch):
-    max_natoms = max([item["graph"].number_of_nodes() for item in batch if item is not None])
-
-    M = np.zeros((len(batch), max_natoms, max_natoms))
-    S = np.zeros((len(batch), max_natoms, max_natoms))
-    Y = np.zeros((len(batch),))
-    V = np.zeros((len(batch), max_natoms))
 
     graph = []
-    cross_graph = []
-    keys = []
 
     for i in range(len(batch)):
-        natom = batch[i]["graph"].number_of_nodes()
-
-        M[i, :natom, :natom] = batch[i]["mapping"]
-        S[i, :natom, :natom] = batch[i]["same_label"]
-        Y[i] = batch[i]["Y"]
-        V[i, :natom] = batch[i]["V"]
         graph.append(batch[i]["graph"])
-        cross_graph.append(batch[i]["cross_graph"])
-        keys.append(batch[i]["key"])
 
-    M = torch.from_numpy(M).float()
-    S = torch.from_numpy(S).float()
-    Y = torch.from_numpy(Y).float()
-    V = torch.from_numpy(V).float()
     graph = dgl.batch(graph)
-    cross_graph = dgl.batch(cross_graph)
 
-    return graph, cross_graph, M, S, Y, V, keys
+    return graph
