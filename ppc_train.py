@@ -126,8 +126,6 @@ def main(args):
         test_keys = pickle.load(fp)
 
     # Print simple statistics about dude data and pdbbind data
-    print(f"Number of train data: {len(train_keys)}")
-    print(f"Number of test data: {len(test_keys)}")
 
     # Initialize model
     # if args.ngpu > 0:
