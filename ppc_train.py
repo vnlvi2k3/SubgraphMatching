@@ -14,6 +14,7 @@ from ppc_model import gnn
 from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from functools import partial
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--lr", help="learning rate", type=float, default=0.0001)
@@ -157,14 +158,14 @@ def main(args):
         args.batch_size,
         shuffle=False,
         num_workers=args.num_workers,
-        collate_fn=collate_fn,
+        collate_fn=partial(collate_fn),
     )
     test_dataloader = DataLoader(
         test_dataset,
         args.batch_size,
         shuffle=False,
         num_workers=args.num_workers,
-        collate_fn=collate_fn,
+        collate_fn=partial(collate_fn),
     )
 
     # Optimizer
