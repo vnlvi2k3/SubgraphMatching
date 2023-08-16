@@ -205,14 +205,14 @@ def main(args):
             model.zero_grad()
 
             graph, cross_graph, M, S, Y, V, _ = sample
+            print("batch num nodes:\n", graph.batch_num_nodes())
 
             graph = graph.to(device)
-            print("abcd\n\n")
             cross_graph = cross_graph.to(device)
             M = M.to(device)
             S = S.to(device)
             Y = Y.to(device)
-            V = V.to(device)
+            V = V.to(device) 
 
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
