@@ -207,6 +207,7 @@ def main(args):
             graph, cross_graph, M, S, Y, V, _ = sample
 
             graph = graph.to(device)
+            print("abcd\n\n")
             cross_graph = cross_graph.to(device)
             M = M.to(device)
             S = S.to(device)
