@@ -14,7 +14,6 @@ from ppc_model import gnn
 from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from iegmn import EquiBind
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--lr", help="learning rate", type=float, default=0.0001)
@@ -159,7 +158,6 @@ def main(args):
         shuffle=False,
         num_workers=args.num_workers,
         collate_fn=collate_fn,
-        # sampler = train_sampler
     )
     test_dataloader = DataLoader(
         test_dataset,
@@ -216,11 +214,11 @@ def main(args):
             )
 
             # Train neural network
-            pred, X_pt, attn_loss = model(
+            pred, attn_loss, rmsd_loss, pairdst_loss = model(
                 X=(graph, cross_graph, V), attn_masking=(M, S), training=True
             )
                         
-            loss = loss_fn(pred, Y) + attn_loss 
+            loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
             loss.backward()
             optimizer.step()
 
@@ -245,11 +243,11 @@ def main(args):
             )
 
             # Train neural network
-            pred, X_pt, attn_loss = model(
+            pred, attn_loss, rmsd_loss, pairdst_loss = model(
                 X=(graph, cross_graph, V), attn_masking=(M, S), training=True
             )
-
-            loss = loss_fn(pred, Y) + attn_loss
+                        
+            loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
             loss.backward()
             optimizer.step()
 
