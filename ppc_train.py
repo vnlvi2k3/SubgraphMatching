@@ -2,19 +2,19 @@ import argparse
 import os
 import pickle
 import time
+import itertools
 
 import numpy as np
-import torch
-import torch.nn as nn
 import utils
 from collections import defaultdict
 from ppc_dataset import BaseDataset, collate_fn, UnderSampler
 from kabsch import kabsch_rmsd
-from ppc_model import gnn
+from gnn import gnn
 from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-import dgl
+import torch
+import torch.nn as nn
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--lr", help="learning rate", type=float, default=0.0001)
@@ -71,7 +71,6 @@ parser.add_argument("--test_keys", help="test keys",
 parser.add_argument("--tag", help="Additional tag for saving and logging folder",
                     type=str, default="")
 
-
 #new args:
 parser.add_argument('-nonlin', type=str, default='lkyrelu', choices=['swish', 'lkyrelu'])
 parser.add_argument('-cross_msgs', default=True, action='store_true')
@@ -89,6 +88,7 @@ parser.add_argument('-residue_emb_dim', type=int, default=64, required=False, he
 parser.add_argument('-iegmn_lay_hid_dim', type=int, default=64, required=False)
 parser.add_argument('-num_att_heads', type=int, default=50, required=False)
 parser.add_argument('-iegmn_n_lays', type=int, default=5, required=False)
+
 
 
 def main(args):
@@ -159,6 +159,7 @@ def main(args):
         shuffle=False,
         num_workers=args.num_workers,
         collate_fn=collate_fn,
+        # sampler = train_sampler
     )
     test_dataloader = DataLoader(
         test_dataset,
@@ -204,23 +205,15 @@ def main(args):
         model.train()
         for sample in tqdm(train_dataloader):
             model.zero_grad()
-
-            graph, cross_graph, M, S, Y, V, _ = sample
-            print("batch num nodes:\n", graph.batch_num_nodes())
-
-            
-            g1 = dgl.graph(([0, 1], [2, 3]))
-            g2 = dgl.graph(([1], [2]))
-            graph = dgl.batch([g1, g2])
-            cross_graph = dgl.batch([g1, g2])
-            
-
-            M = M.to(device)
-            S = S.to(device)
-            Y = Y.to(device)
-            V = V.to(device) 
-            graph = graph.to(device)
-            cross_graph = cross_graph.to(device)
+            graph, cross_graph, M, S, Y, V, _, _, _ = sample
+            M, S, Y, V, graph, cross_graph = (
+                M.to(device),
+                S.to(device),
+                Y.to(device),
+                V.to(device),
+                graph.to(device),
+                cross_graph.to(device)
+            )
 
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
@@ -238,32 +231,28 @@ def main(args):
 
         model.eval()
         st_eval = time.time()
+        sam = 0
 
         for sample in tqdm(test_dataloader):
+            sam = sam + 1
+            graph, cross_graph, M, S, Y, V, _, _, _ = sample
+            M, S, Y, V, graph, cross_graph = (
+                M.to(device),
+                S.to(device),
+                Y.to(device),
+                V.to(device),
+                graph.to(device),
+                cross_graph.to(device)
+            )
 
-            graph, cross_graph, M, S, Y, V, _ = sample
-
-            g1 = dgl.graph(([0, 1], [2, 3]))
-            g2 = dgl.graph(([1], [2]))
-            graph = dgl.batch([g1, g2])
-            cross_graph = dgl.batch([g1, g2])
-
-            graph = graph.to(device)
-            cross_graph = cross_graph.to(device)
-            M = M.to(device)
-            S = S.to(device)
-            Y = Y.to(device)
-            V = V.to(device)
-
-            # Train neural network
+            # Test neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
                 X=(graph, cross_graph, V), attn_masking=(M, S), training=True
             )
                         
             loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
-            loss.backward()
-            optimizer.step()
 
+            
             # Collect loss, true label and predicted label
             test_losses.append(loss.data.cpu().item())
             test_true.append(Y.data.cpu().numpy())
