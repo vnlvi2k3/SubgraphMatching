@@ -14,7 +14,7 @@ from ppc_model import gnn
 from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from functools import partial
+import dgl
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--lr", help="learning rate", type=float, default=0.0001)
@@ -205,48 +205,57 @@ def main(args):
         for sample in tqdm(train_dataloader):
             model.zero_grad()
 
-            graph, cross_graph = sample
+            graph, cross_graph, M, S, Y, V, _ = sample
             print("batch num nodes:\n", graph.batch_num_nodes())
-            graph = graph.to(device)
 
+            graph = graph.to(device)
+            cross_graph = cross_graph.to(device)
+
+            M = M.to(device)
+            S = S.to(device)
+            Y = Y.to(device)
+            V = V.to(device) 
 
             # Train neural network
-            # pred, attn_loss, rmsd_loss, pairdst_loss = model(
-            #     X=(graph, cross_graph, V), attn_masking=(M, S), training=True
-            # )
+            pred, attn_loss, rmsd_loss, pairdst_loss = model(
+                X=(graph, cross_graph, V), attn_masking=(M, S), training=True
+            )
                         
-            # loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
-            loss = 0
+            loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
             loss.backward()
             optimizer.step()
 
             # Collect loss, true label and predicted label
             train_losses.append(loss.data.cpu().item())
-            # train_true.append(Y.data.cpu().numpy())
-            # train_pred.append(pred.data.cpu().numpy())
+            train_true.append(Y.data.cpu().numpy())
+            train_pred.append(pred.data.cpu().numpy())
 
         model.eval()
         st_eval = time.time()
 
         for sample in tqdm(test_dataloader):
 
-            graph, cross_graph = sample
+            graph, cross_graph, M, S, Y, V, _ = sample
             graph = graph.to(device)
+            cross_graph = cross_graph.to(device)
+            M = M.to(device)
+            S = S.to(device)
+            Y = Y.to(device)
+            V = V.to(device)
 
             # Train neural network
-            # pred, attn_loss, rmsd_loss, pairdst_loss = model(
-            #     X=(graph, cross_graph, V), attn_masking=(M, S), training=True
-            # )
+            pred, attn_loss, rmsd_loss, pairdst_loss = model(
+                X=(graph, cross_graph, V), attn_masking=(M, S), training=True
+            )
                         
-            # loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
-            loss = 0
+            loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
             loss.backward()
             optimizer.step()
 
             # Collect loss, true label and predicted label
             test_losses.append(loss.data.cpu().item())
-            # test_true.append(Y.data.cpu().numpy())
-            # test_pred.append(pred.data.cpu().numpy())
+            test_true.append(Y.data.cpu().numpy())
+            test_pred.append(pred.data.cpu().numpy())
 
 
         end = time.time()
