@@ -126,6 +126,8 @@ def main(args):
         test_keys = pickle.load(fp)
 
     # Print simple statistics about dude data and pdbbind data
+    print(f"Number of train data: {len(train_keys)}")
+    print(f"Number of test data: {len(test_keys)}")
 
     # Initialize model
     # if args.ngpu > 0:
@@ -202,8 +204,10 @@ def main(args):
         model.train()
         for sample in tqdm(train_dataloader):
             model.zero_grad()
+
             graph, cross_graph = sample
-            graph, cross_graph = graph.to(device)
+            print("batch num nodes:\n", graph.batch_num_nodes())
+
 
             # Train neural network
             # pred, attn_loss, rmsd_loss, pairdst_loss = model(
@@ -217,8 +221,8 @@ def main(args):
 
             # Collect loss, true label and predicted label
             train_losses.append(loss.data.cpu().item())
-            train_true.append(Y.data.cpu().numpy())
-            train_pred.append(pred.data.cpu().numpy())
+            # train_true.append(Y.data.cpu().numpy())
+            # train_pred.append(pred.data.cpu().numpy())
 
         model.eval()
         st_eval = time.time()
@@ -226,20 +230,21 @@ def main(args):
         for sample in tqdm(test_dataloader):
 
             graph, cross_graph = sample
-            graph, cross_graph  = (
-                graph.to(device),
-                cross_graph.to(device)
-            )
 
             # Train neural network
+            # pred, attn_loss, rmsd_loss, pairdst_loss = model(
+            #     X=(graph, cross_graph, V), attn_masking=(M, S), training=True
+            # )
+                        
+            # loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
             loss = 0
             loss.backward()
             optimizer.step()
 
             # Collect loss, true label and predicted label
             test_losses.append(loss.data.cpu().item())
-            test_true.append(Y.data.cpu().numpy())
-            test_pred.append(pred.data.cpu().numpy())
+            # test_true.append(Y.data.cpu().numpy())
+            # test_pred.append(pred.data.cpu().numpy())
 
 
         end = time.time()
