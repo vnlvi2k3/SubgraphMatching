@@ -102,7 +102,7 @@ class BaseDataset(Dataset):
         # if n1+n2 > 300 : return None
         sample = {
             "graph": graph,
-            "cross_graph" = cross_graph,
+            "cross_graph" : cross_graph,
             "H": H,
             "Y": Y,
             "V": valid,
