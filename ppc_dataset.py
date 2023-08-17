@@ -134,7 +134,7 @@ def collate_fn(batch):
     M = np.zeros((len(batch), max_natoms, max_natoms))
     S = np.zeros((len(batch), max_natoms, max_natoms))
     Y = np.zeros((len(batch),))
-    V = np.zeros((len(batch), max_natoms))=
+    V = np.zeros((len(batch), max_natoms))
 
     keys = []
 
