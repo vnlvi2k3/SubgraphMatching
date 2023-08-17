@@ -145,7 +145,7 @@ def collate_fn(batch):
         M[i, :natom, :natom] = batch[i]["mapping"]
         S[i, :natom, :natom] = batch[i]["same_label"]
         Y[i] = batch[i]["Y"]
-        V[i, :natom] = batch[i]["V"]=
+        V[i, :natom] = batch[i]["V"]
         keys.append(batch[i]["key"])
 
     H = torch.from_numpy(H).float()
