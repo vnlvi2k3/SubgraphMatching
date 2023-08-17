@@ -27,6 +27,7 @@ class BaseDataset(Dataset):
         self.keys = keys
         self.data_dir = data_dir
         self.embedding_dim = embedding_dim
+        self.device = torch.device("cuda:0")
 
     def __len__(self):
         return len(self.keys)
@@ -72,6 +73,8 @@ class BaseDataset(Dataset):
         graph_pt = dgl.graph((src_lst, dst_lst))
         src_lst_cross, dst_lst_cross = np.where(agg_adj2==1)
         graph_pt_cross = dgl.graph((src_lst_cross, dst_lst_cross))
+        graph_pt.ndata['feat'] = torch.from_numpy(H).float()
+        graph_pt_cross.ndata['feat'] = torch.from_numpy(H).float()
         X_pt = []
         for id in m1.nodes:
             X_pt.append(m1.nodes[id]["coords"])
@@ -79,6 +82,8 @@ class BaseDataset(Dataset):
             X_pt.append(m2.nodes[id]["coords"])
         X_pt = np.vstack(X_pt)
         X_pt = torch.from_numpy(X_pt).float()
+        graph_pt.ndata['coords'] = X_pt
+        graph_pt_cross.ndata['coords'] = X_pt
 
         # node indice for aggregation
         valid = np.zeros((n1 + n2,))
@@ -100,12 +105,8 @@ class BaseDataset(Dataset):
         Y = 1 if "iso" in key else 0
 
         # if n1+n2 > 300 : return None
-        sample = {
-            "graph": graph_pt,
-            "cross_graph": graph_pt_cross,
-        }
 
-        return sample
+        return graph_pt.to(self.device), graph_pt_cross.to(self.device)
 
 
 class UnderSampler(Sampler):
@@ -129,15 +130,7 @@ class UnderSampler(Sampler):
         return self.num_samples
 
 
-def collate_fn(data):
-    graph_pt, graph_pt_cross = map(list, zip(*data))
-    graph = []
-    cross_graph = []
-    for i, g in enumerate(graph_pt):
-        gc = graph_pt_cross[i]
-        graph.append(g)
-        cross_graph.append(gc)
+def collate_fn(batch):
+    graphs, cross_graphs = map(list, zip*(batch))
 
-    graph = dgl.batch(graph)
-    cross_graph = dgl.batch(graph)
-    return graph, cross_graph
+    return dgl.batch(graphs), dgl.batch(cross_graphs)
