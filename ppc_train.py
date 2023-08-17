@@ -139,7 +139,7 @@ def main(args):
         "Number of parameters: ",
         sum(p.numel() for p in model.parameters() if p.requires_grad),
     )
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = utils.initialize_model(model, device, load_save_file=args.ckpt)
 
     # Train and test dataset
