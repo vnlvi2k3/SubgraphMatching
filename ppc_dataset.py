@@ -9,6 +9,7 @@ import utils
 from scipy.spatial import distance_matrix
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import Sampler
+import dgl
 
 random.seed(42)
 
