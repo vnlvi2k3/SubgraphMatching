@@ -2,18 +2,19 @@ import argparse
 import os
 import pickle
 import time
+import itertools
 
 import numpy as np
-import torch
-import torch.nn as nn
 import utils
 from collections import defaultdict
-from ppc_dataset import BaseDataset, collate_fn, UnderSampler
+from update_dataset import BaseDataset, collate_fn, UnderSampler
 from kabsch import kabsch_rmsd
-from ppc_model import gnn
+from gnn import gnn
 from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+import torch
+import torch.nn as nn
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--lr", help="learning rate", type=float, default=0.0001)
@@ -70,24 +71,6 @@ parser.add_argument("--test_keys", help="test keys",
 parser.add_argument("--tag", help="Additional tag for saving and logging folder",
                     type=str, default="")
 
-
-#new args:
-parser.add_argument('-nonlin', type=str, default='lkyrelu', choices=['swish', 'lkyrelu'])
-parser.add_argument('-cross_msgs', default=True, action='store_true')
-parser.add_argument('-layer_norm', type=str, default='LN', choices=['0', 'BN', 'LN'])
-parser.add_argument('-layer_norm_coors', type=str, default='0', choices=['0', 'LN'])
-parser.add_argument('-final_h_layer_norm', type=str, default='0', choices=['0', 'GN', 'BN', 'LN'])
-parser.add_argument('-use_dist_in_layers', default=True, action='store_true')
-parser.add_argument('-skip_weight_h', type=float, default=0.5, required=False)
-parser.add_argument('-leakyrelu_neg_slope', type=float, default=1e-2, required=False)
-parser.add_argument('-x_connection_init', type=float, default=0., required=False)
-
-parser.add_argument('-noise_decay_rate', type=float, default=0., required=False)
-parser.add_argument('-noise_initial', type=float, default=0., required=False)
-parser.add_argument('-residue_emb_dim', type=int, default=64, required=False, help='embedding')
-parser.add_argument('-iegmn_lay_hid_dim', type=int, default=64, required=False)
-parser.add_argument('-num_att_heads', type=int, default=50, required=False)
-parser.add_argument('-iegmn_n_lays', type=int, default=5, required=False)
 
 
 def main(args):
@@ -158,6 +141,7 @@ def main(args):
         shuffle=False,
         num_workers=args.num_workers,
         collate_fn=collate_fn,
+        # sampler = train_sampler
     )
     test_dataloader = DataLoader(
         test_dataset,
@@ -203,23 +187,23 @@ def main(args):
         model.train()
         for sample in tqdm(train_dataloader):
             model.zero_grad()
-
-            graph, cross_graph, M, S, Y, V, _ = sample
-            print("batch num nodes:\n", graph.batch_num_nodes())
-
-            graph = graph.to(device)
-            cross_graph = cross_graph.to(device)
-            M = M.to(device)
-            S = S.to(device)
-            Y = Y.to(device)
-            V = V.to(device) 
+            H, A1, A2, M, S, Y, V, _, _, _ = sample
+            H, A1, A2, M, S, Y, V = (
+                H.to(device),
+                A1.to(device),
+                A2.to(device),
+                M.to(device),
+                S.to(device),
+                Y.to(device),
+                V.to(device),
+            )
 
             # Train neural network
-            pred, attn_loss, rmsd_loss, pairdst_loss = model(
-                X=(graph, cross_graph, V), attn_masking=(M, S), training=True
+            pred, attn_loss = model(
+                X=(H, A1, A2, V), attn_masking=(M, S), training=True
             )
                         
-            loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
+            loss = loss_fn(pred, Y) + attn_loss
             loss.backward()
             optimizer.step()
 
@@ -230,25 +214,127 @@ def main(args):
 
         model.eval()
         st_eval = time.time()
+        sam = 0
 
         for sample in tqdm(test_dataloader):
-
-            graph, cross_graph, M, S, Y, V, _ = sample
-            graph = graph.to(device)
-            cross_graph = cross_graph.to(device)
-            M = M.to(device)
-            S = S.to(device)
-            Y = Y.to(device)
-            V = V.to(device)
-
-            # Train neural network
-            pred, attn_loss, rmsd_loss, pairdst_loss = model(
-                X=(graph, cross_graph, V), attn_masking=(M, S), training=True
+            sam = sam + 1
+            H, A1, A2, M, S, Y, V, P, Q, _ = sample
+            H, A1, A2, M, S, Y, V = (
+                H.to(device),
+                A1.to(device),
+                A2.to(device),
+                M.to(device),
+                S.to(device),
+                Y.to(device),
+                V.to(device),
             )
-                        
-            loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
-            loss.backward()
-            optimizer.step()
+
+            # Test neural network
+            pred, attn_loss = model(
+                X=(H, A1, A2, V), attn_masking=(M, S), training=True
+            )
+            predict_mapping = model.get_refined_adjs2((H, A1, A2, V))
+
+            
+            
+            for batch_idx, i in enumerate(pred):
+                
+                if i.item() >= 0.5:
+                    n1 = len(V[batch_idx][V[batch_idx]==1])
+
+                    test_true_mapping = M[batch_idx].unsqueeze(0).data.cpu().numpy()
+                    test_pred_mapping = predict_mapping[batch_idx].unsqueeze(0).data.cpu().numpy()
+
+
+                    for mapping_true, mapping_pred in zip(test_true_mapping, test_pred_mapping):
+                        gt_mapping = {}
+                        x_coord, y_coord = np.where(mapping_true > 0)
+                        for x, y in zip(x_coord, y_coord):
+                            if x < y:
+                                gt_mapping[x] = [y]  # Subgraph node: Graph node
+
+                        pred_mapping = defaultdict(lambda: {})
+                        x_coord, y_coord = np.where(mapping_pred > 0)
+
+                        for x, y in zip(x_coord, y_coord):
+                            if x < y:
+                                if y in pred_mapping[x]:
+                                    pred_mapping[x][y] = (
+                                        pred_mapping[x][y] + mapping_pred[x][y]
+                                    ) / 2
+                                else:
+                                    pred_mapping[x][y] = mapping_pred[
+                                        x, y
+                                    ]  # Subgraph node: Graph node
+                            else:
+                                if x in pred_mapping[y]:
+                                    pred_mapping[y][x] = (
+                                        pred_mapping[y][x] + mapping_pred[x][y]
+                                    ) / 2
+                                else:
+                                    pred_mapping[y][x] = mapping_pred[
+                                        x, y
+                                    ]  # Subgraph node: Graph node
+
+                    sorted_predict_mapping = defaultdict(lambda: [])
+                    sorted_predict_mapping.update(
+                        {
+                            k: [
+                                y[0]
+                                for y in sorted(
+                                    [(n, prob) for n, prob in v.items()],
+                                    key=lambda x: x[1],
+                                    reverse=True,
+                                )
+                            ]
+                            for k, v in pred_mapping.items()
+                        }
+                    )
+                    
+                    for k, v in sorted_predict_mapping.items():
+                        sorted_predict_mapping[k] = [item for item in v if item >= n1]
+
+                    is_iso = 0
+                    topk = 9
+
+
+
+                    div = 2
+                    upper = int(np.ceil(n1/div))
+                    for i in range(upper):
+                        mapping_combinations = []
+
+                        if i == upper - 1:
+                            S = dict(list(sorted_predict_mapping.items())[i*div : n1])
+                            sub_coords = P[batch_idx][i*div : n1]
+                        else:
+                            S = dict(list(sorted_predict_mapping.items())[i*div : (i+1)*div])
+                            sub_coords = P[batch_idx][i*div : (i+1)*div]
+
+                        if n1 > 0:
+                            for i in S:
+                                S[i] = S[i][:topk]
+                            _ , values = zip(*S.items())
+                            for row in itertools.product(*values):
+                                mapping_combinations.append(row)
+                            mapping_combinations = [list(i) for i in mapping_combinations]
+
+                        for mapping_idx in mapping_combinations:
+                            mapping_idx = [mapping_idx[j] - n1 for j in range(len(mapping_idx))]
+                            graph_coords = Q[batch_idx][mapping_idx]
+
+                            rmsd = kabsch_rmsd(sub_coords, graph_coords)
+                            if rmsd <= 1e-3:
+                                is_iso = is_iso + 1
+                                break
+
+
+                    if is_iso == upper:
+                        pred[batch_idx] = torch.tensor([1.], device=device)
+                    else:
+                        pred[batch_idx] = torch.tensor([0.], device=device)
+            
+            loss = loss_fn(pred, Y) + attn_loss
 
             # Collect loss, true label and predicted label
             test_losses.append(loss.data.cpu().item())
