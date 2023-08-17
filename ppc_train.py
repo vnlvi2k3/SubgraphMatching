@@ -240,21 +240,16 @@ def main(args):
         st_eval = time.time()
 
         for sample in tqdm(test_dataloader):
-            H, M, S, Y, V, _ = sample
-            H, M, S, Y, V = (
+            graph, cross_graph, H, M, S, Y, V, _ = sample
+            graph, cross_graph, H, M, S, Y, V = (
+                graph.to(device),
+                cross_graph.to(deivce),
                 H.to(device),
                 M.to(device),
                 S.to(device),
                 Y.to(device),
                 V.to(device),
             )
-            g1 = dgl.graph(([0, 1], [2, 3]))
-            g2 = dgl.graph(([1], [2]))
-            graph = dgl.batch([g1, g2])
-            cross_graph = dgl.batch([g1, g2])
-
-            graph = graph.to(device)
-            cross_graph = cross_graph.to(device)
 
             # Test neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
