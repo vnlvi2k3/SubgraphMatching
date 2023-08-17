@@ -205,8 +205,9 @@ def main(args):
         model.train()
         for sample in tqdm(train_dataloader):
             model.zero_grad()
-            graph, cross_graph, M, S, Y, V, _ = sample
-            M, S, Y, V, graph, cross_graph = (
+            H, graph, cross_graph, M, S, Y, V, _ = sample
+            H, M, S, Y, V, graph, cross_graph = (
+                H.to(device),
                 M.to(device),
                 S.to(device),
                 Y.to(device),
@@ -235,8 +236,9 @@ def main(args):
 
         for sample in tqdm(test_dataloader):
             sam = sam + 1
-            graph, cross_graph, M, S, Y, V, _ = sample
-            M, S, Y, V, graph, cross_graph = (
+            H, graph, cross_graph, M, S, Y, V, _ = sample
+            H, M, S, Y, V, graph, cross_graph = (
+                H.to(device),
                 M.to(device),
                 S.to(device),
                 Y.to(device),
