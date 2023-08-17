@@ -139,7 +139,7 @@ def main(args):
         "Number of parameters: ",
         sum(p.numel() for p in model.parameters() if p.requires_grad),
     )
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = utils.initialize_model(model, device, load_save_file=args.ckpt)
 
     # Train and test dataset
@@ -213,14 +213,14 @@ def main(args):
             g2 = dgl.graph(([1], [2]))
             graph = dgl.batch([g1, g2])
             cross_graph = dgl.batch([g1, g2])
-
-            graph = graph.to(device)
-            cross_graph = cross_graph.to(device)
+            
 
             M = M.to(device)
             S = S.to(device)
             Y = Y.to(device)
             V = V.to(device) 
+            graph = graph.to(device)
+            cross_graph = cross_graph.to(device)
 
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
