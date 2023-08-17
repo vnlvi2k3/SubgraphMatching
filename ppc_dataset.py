@@ -141,7 +141,7 @@ def collate_fn(batch):
     for i in range(len(batch)):
         natom = len(batch[i]["H"])
 
-        H[i, :natom] = batch[i]["H"]=
+        H[i, :natom] = batch[i]["H"]
         M[i, :natom, :natom] = batch[i]["mapping"]
         S[i, :natom, :natom] = batch[i]["same_label"]
         Y[i] = batch[i]["Y"]
