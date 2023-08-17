@@ -205,16 +205,21 @@ def main(args):
         model.train()
         for sample in tqdm(train_dataloader):
             model.zero_grad()
-            H, graph, cross_graph, M, S, Y, V, _ = sample
-            H, M, S, Y, V, graph, cross_graph = (
+            H, M, S, Y, V, _ = sample
+            H, M, S, Y, V = (
                 H.to(device),
                 M.to(device),
                 S.to(device),
                 Y.to(device),
                 V.to(device),
-                graph.to(device),
-                cross_graph.to(device)
             )
+            g1 = dgl.graph(([0, 1], [2, 3]))
+            g2 = dgl.graph(([1], [2]))
+            graph = dgl.batch([g1, g2])
+            cross_graph = dgl.batch([g1, g2])
+
+            graph = graph.to(device)
+            cross_graph = cross_graph.to(device)
 
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
@@ -232,20 +237,23 @@ def main(args):
 
         model.eval()
         st_eval = time.time()
-        sam = 0
 
         for sample in tqdm(test_dataloader):
-            sam = sam + 1
-            H, graph, cross_graph, M, S, Y, V, _ = sample
-            H, M, S, Y, V, graph, cross_graph = (
+            H, M, S, Y, V, _ = sample
+            H, M, S, Y, V = (
                 H.to(device),
                 M.to(device),
                 S.to(device),
                 Y.to(device),
                 V.to(device),
-                graph.to(device),
-                cross_graph.to(device)
             )
+            g1 = dgl.graph(([0, 1], [2, 3]))
+            g2 = dgl.graph(([1], [2]))
+            graph = dgl.batch([g1, g2])
+            cross_graph = dgl.batch([g1, g2])
+
+            graph = graph.to(device)
+            cross_graph = cross_graph.to(device)
 
             # Test neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
