@@ -6,7 +6,6 @@ import networkx as nx
 import numpy as np
 import torch
 import utils
-import dgl
 from scipy.spatial import distance_matrix
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import Sampler
@@ -46,11 +45,19 @@ class BaseDataset(Dataset):
         n1 = m1.number_of_nodes()
         adj1 = nx.to_numpy_array(m1) + np.eye(n1)
         H1 = onehot_encoding_node(m1, self.embedding_dim)
+        sub_coordinates = []
+        for id in m1.nodes:
+            sub_coordinates.append(m1.nodes[id]["coords"])
+        sub_coordinates = np.vstack(sub_coordinates)
 
         # Prepare source graph
         n2 = m2.number_of_nodes()
         adj2 = nx.to_numpy_array(m2) + np.eye(n2)
         H2 = onehot_encoding_node(m2, self.embedding_dim)
+        graph_coordinates = []
+        for id in m2.nodes:
+            graph_coordinates.append(m2.nodes[id]["coords"])
+        graph_coordinates = np.vstack(graph_coordinates)
 
         # Aggregation node encoding
         agg_adj1 = np.zeros((n1 + n2, n1 + n2))
@@ -66,23 +73,6 @@ class BaseDataset(Dataset):
         H1 = np.concatenate([H1, np.zeros((n1, self.embedding_dim))], 1)
         H2 = np.concatenate([np.zeros((n2, self.embedding_dim)), H2], 1)
         H = np.concatenate([H1, H2], 0)
-
-        #prepare graph and cross_graph
-        src_lst, dst_lst = np.where(agg_adj1==1)
-        graph_pt = dgl.graph((src_lst, dst_lst))
-        src_lst_cross, dst_lst_cross = np.where(agg_adj2==1)
-        graph_pt_cross = dgl.graph((src_lst_cross, dst_lst_cross))
-        graph_pt.ndata['feat'] = torch.from_numpy(H).float()
-        graph_pt_cross.ndata['feat'] = torch.from_numpy(H).float()
-        X_pt = []
-        for id in m1.nodes:
-            X_pt.append(m1.nodes[id]["coords"])
-        for id in m2.nodes:
-            X_pt.append(m2.nodes[id]["coords"])
-        X_pt = np.vstack(X_pt)
-        X_pt = torch.from_numpy(X_pt).float()
-        graph_pt.ndata['coords'] = X_pt
-        graph_pt_cross.ndata['coords'] = X_pt
 
         # node indice for aggregation
         valid = np.zeros((n1 + n2,))
@@ -141,23 +131,21 @@ def collate_fn(batch):
     max_natoms = max([len(item["H"]) for item in batch if item is not None])
 
     H = np.zeros((len(batch), max_natoms, batch[0]["H"].shape[-1]))
-
     M = np.zeros((len(batch), max_natoms, max_natoms))
     S = np.zeros((len(batch), max_natoms, max_natoms))
     Y = np.zeros((len(batch),))
-    V = np.zeros((len(batch), max_natoms))
+    V = np.zeros((len(batch), max_natoms))=
 
     keys = []
 
     for i in range(len(batch)):
         natom = len(batch[i]["H"])
 
-        H[i, :natom] = batch[i]["H"]
-
+        H[i, :natom] = batch[i]["H"]=
         M[i, :natom, :natom] = batch[i]["mapping"]
         S[i, :natom, :natom] = batch[i]["same_label"]
         Y[i] = batch[i]["Y"]
-        V[i, :natom] = batch[i]["V"]
+        V[i, :natom] = batch[i]["V"]=
         keys.append(batch[i]["key"])
 
     H = torch.from_numpy(H).float()
