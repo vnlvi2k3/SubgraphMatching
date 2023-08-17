@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torch
 import torch.nn as nn
+import dgl
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--lr", help="learning rate", type=float, default=0.0001)
