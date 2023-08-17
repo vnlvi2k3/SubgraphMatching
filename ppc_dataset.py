@@ -89,12 +89,19 @@ class BaseDataset(Dataset):
         same_label_matrix = np.zeros_like(agg_adj1)
         same_label_matrix[:n1, n1:] = np.copy(dm_new)
         same_label_matrix[n1:, :n1] = np.copy(np.transpose(dm_new))
+        
+        g1 = dgl.graph(([0, 1], [2, 3]))
+        g2 = dgl.graph(([1], [2]))
+        graph = dgl.batch([g1, g2])
+        cross_graph = dgl.batch([g1, g2])
 
         # iso to class
         Y = 1 if "iso" in key else 0
 
         # if n1+n2 > 300 : return None
         sample = {
+            "graph": graph,
+            "cross_graph" = cross_graph,
             "H": H,
             "Y": Y,
             "V": valid,
@@ -137,6 +144,8 @@ def collate_fn(batch):
     V = np.zeros((len(batch), max_natoms))
 
     keys = []
+    graph = []
+    cross_graph = []
 
     for i in range(len(batch)):
         natom = len(batch[i]["H"])
@@ -147,11 +156,16 @@ def collate_fn(batch):
         Y[i] = batch[i]["Y"]
         V[i, :natom] = batch[i]["V"]
         keys.append(batch[i]["key"])
+        graph.append(batch[i]["graph"])
+        cross_graph.append(batch[i]["cross_graph"])
 
     H = torch.from_numpy(H).float()
     M = torch.from_numpy(M).float()
     S = torch.from_numpy(S).float()
     Y = torch.from_numpy(Y).float()
     V = torch.from_numpy(V).float()
+    graph = dgl.batch(graph)
+    cross_graph = dgl.batch(cross_graph)
 
-    return H, M, S, Y, V, keys
+
+    return graph, cross_graph, H, M, S, Y, V, keys
