@@ -27,7 +27,6 @@ class BaseDataset(Dataset):
         self.keys = keys
         self.data_dir = data_dir
         self.embedding_dim = embedding_dim
-        self.device = torch.device("cuda:0")
 
     def __len__(self):
         return len(self.keys)
@@ -106,7 +105,7 @@ class BaseDataset(Dataset):
 
         # if n1+n2 > 300 : return None
 
-        return graph_pt.to(self.device), graph_pt_cross.to(self.device)
+        return graph_pt, graph_pt_cross
 
 
 class UnderSampler(Sampler):
