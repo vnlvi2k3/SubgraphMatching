@@ -207,6 +207,7 @@ def main(args):
 
             graph, cross_graph = sample
             print("batch num nodes:\n", graph.batch_num_nodes())
+            graph = graph.to(device)
 
 
             # Train neural network
@@ -230,6 +231,7 @@ def main(args):
         for sample in tqdm(test_dataloader):
 
             graph, cross_graph = sample
+            graph = graph.to(device)
 
             # Train neural network
             # pred, attn_loss, rmsd_loss, pairdst_loss = model(
