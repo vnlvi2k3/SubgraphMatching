@@ -6,10 +6,10 @@ import networkx as nx
 import numpy as np
 import torch
 import utils
+import dgl
 from scipy.spatial import distance_matrix
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import Sampler
-import dgl
 
 random.seed(42)
 
@@ -67,6 +67,27 @@ class BaseDataset(Dataset):
         H2 = np.concatenate([np.zeros((n2, self.embedding_dim)), H2], 1)
         H = np.concatenate([H1, H2], 0)
 
+        #prepare graph and cross_graph
+        src_lst, dst_lst = np.where(agg_adj1==1)
+        e = [(i,j) for i,j in zip(src_lst, dst_lst)]
+        graph_pt = dgl.graph(e)
+        src_lst_cross, dst_lst_cross = np.where(agg_adj2==1)
+        e_cross = [(i,j) for i,j in zip(src_lst_cross, dst_lst_cross)]
+        graph_pt_cross = dgl.graph(e_cross)
+        X_pt = []
+        for id in m1.nodes:
+            X_pt.append(m1.nodes[id]["coords"])
+        for id in m2.nodes:
+            X_pt.append(m2.nodes[id]["coords"])
+        X_pt = np.vstack(X_pt)
+        X_pt = torch.from_numpy(X_pt).float()
+        H_pt = torch.from_numpy(H).float()
+        for i, id in enumerate(graph_pt.nodes):
+            graph_pt.nodes[id]["feat"] = H_pt[i]
+            graph_pt_cross.nodes[id]["feat"] = H_pt[i]
+            graph_pt.nodes[id]["coords"] = X_pt[i]
+            graph_pt_cross.nodes[id]["coords"] = X_pt[i]
+
         # node indice for aggregation
         valid = np.zeros((n1 + n2,))
         valid[:n1] = 1
@@ -85,13 +106,11 @@ class BaseDataset(Dataset):
 
         # iso to class
         Y = 1 if "iso" in key else 0
-        # g1 = nx.wheel_graph(5)
-        # g2 = nx.wheel_graph(6)
 
         # if n1+n2 > 300 : return None
         sample = {
-            "g1": m1,
-            "g2": m2,
+            "graph": graph_pt,
+            "cross_graph": graph_pt_cross,
             "H": H,
             "Y": Y,
             "V": valid,
@@ -141,12 +160,12 @@ def collate_fn(batch):
         S[i, :natom, :natom] = batch[i]["same_label"]
         Y[i] = batch[i]["Y"]
         V[i, :natom] = batch[i]["V"]
-        graph.append(batch[i]["g1"])
-        cross_graph.append(batch[i]["g2"])
+        graph.append(batch[i]["graph"])
+        cross_graph.append(batch[i]["cross_graph"])
 
     M = torch.from_numpy(M).float()
     S = torch.from_numpy(S).float()
     Y = torch.from_numpy(Y).float()
     V = torch.from_numpy(V).float()
 
-    return  graph, cross_graph, M, S, Y, V
+    return graph, cross_graph, M, S, Y, V
