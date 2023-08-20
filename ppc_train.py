@@ -207,7 +207,7 @@ def main(args):
 
             graph, cross_graph, M, S, Y, V  = sample
             print(len(graph))
-            print(graph[0].number_od_nodes())
+            print(graph[0].number_of_nodes())
             graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in graph]
             cross_graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in cross_graph]
             graph = dgl.batch(graph)
