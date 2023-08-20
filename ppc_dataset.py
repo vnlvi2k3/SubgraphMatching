@@ -21,6 +21,18 @@ def onehot_encoding_node(m, embedding_dim):
     H = np.array(H)
     return H
 
+def add_attributes(graph, coords, features):
+    nodes = np.array(list(graph.nodes))
+    edges = np.array(list(graph.edges))
+    labelled_nodes = [
+        (nodes[k], {"feat": features[k], "coords": coords[k]})
+        for k in range(len(nodes))
+    ]
+    G = nx.Graph()
+    G.add_nodes_from(labelled_nodes)
+    G.add_edges_from(edges)
+
+    return G
 
 class BaseDataset(Dataset):
     def __init__(self, keys, data_dir, embedding_dim=20):
@@ -82,11 +94,8 @@ class BaseDataset(Dataset):
         X_pt = np.vstack(X_pt)
         X_pt = torch.from_numpy(X_pt).float()
         H_pt = torch.from_numpy(H).float()
-        for i, id in enumerate(graph_pt.nodes):
-            graph_pt.nodes[id]["feat"] = float(0)
-            graph_pt_cross.nodes[id]["feat"] = float(0)
-            graph_pt.nodes[id]["coords"] = float(0)
-            graph_pt_cross.nodes[id]["coords"] = float(0)
+        graph_pt = add_attributes(graph_pt, X_pt, H_pt)
+        graph_pt_cross = add_attributes(graph_pt_cross, X_pt, H_pt)
 
         # node indice for aggregation
         valid = np.zeros((n1 + n2,))
