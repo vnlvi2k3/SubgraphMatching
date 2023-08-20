@@ -206,6 +206,8 @@ def main(args):
             model.zero_grad()
 
             graph, cross_graph, M, S, Y, V  = sample
+            print(len(graph))
+            print(graph[0].number_od_nodes())
             graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in graph]
             cross_graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in cross_graph]
             graph = dgl.batch(graph)
@@ -217,7 +219,7 @@ def main(args):
             V = V.to(device) 
             graph = graph.to(device)
             cross_graph = cross_graph.to(device)
-            print("graph:\n", graph.batch_num_nodes(),"shape 1:\n" , graph.ndata["feat"].shape, "shape 2:\n" , graph.ndata["coords"].shape, "feat:\n" , graph.ndata["feat"][0],"coord:\n",graph.ndata["coords"][0])
+            #print("graph:\n", graph.batch_num_nodes(),"shape 1:\n" , graph.ndata["feat"].shape, "shape 2:\n" , graph.ndata["coords"].shape, "feat:\n" , graph.ndata["feat"][0],"coord:\n",graph.ndata["coords"][0])
 
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
