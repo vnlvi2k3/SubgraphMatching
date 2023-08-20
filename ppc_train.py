@@ -211,10 +211,14 @@ def main(args):
             S = S.to(device)
             Y = Y.to(device)
             V = V.to(device) 
+            g1 = dgl.graph(([0, 1], [2, 3]))
+            g2 = dgl.graph(([1], [2]))
+            graph = dgl.batch([g1, g2])
+            cross_graph = dgl.batch([g1, g2])
 
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
-                X=(V), attn_masking=(M, S), training=True
+                X=(graph, cross_graph, V), attn_masking=(M, S), training=True
             )
                         
             loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
