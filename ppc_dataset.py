@@ -83,10 +83,10 @@ class BaseDataset(Dataset):
         X_pt = torch.from_numpy(X_pt).float()
         H_pt = torch.from_numpy(H).float()
         for i, id in enumerate(graph_pt.nodes):
-            graph_pt.nodes[id]["feat"] = H_pt[i]
-            graph_pt_cross.nodes[id]["feat"] = H_pt[i]
-            graph_pt.nodes[id]["coords"] = X_pt[i]
-            graph_pt_cross.nodes[id]["coords"] = X_pt[i]
+            graph_pt.nodes[id]["feat"] = float(0)
+            graph_pt_cross.nodes[id]["feat"] = float(0)
+            graph_pt.nodes[id]["coords"] = float(0)
+            graph_pt_cross.nodes[id]["coords"] = float(0)
 
         # node indice for aggregation
         valid = np.zeros((n1 + n2,))
