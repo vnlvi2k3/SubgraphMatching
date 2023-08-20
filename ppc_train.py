@@ -206,8 +206,8 @@ def main(args):
             model.zero_grad()
 
             graph, cross_graph, M, S, Y, V  = sample
-            graph = [dgl.from_networkx(item, node_attrs = ['coords']) for item in graph]
-            cross_graph = [dgl.from_networkx(item, node_attrs = ['coords']) for item in cross_graph]
+            graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in graph]
+            cross_graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in cross_graph]
             graph = dgl.batch(graph)
             cross_graph = dgl.batch(cross_graph)
 
@@ -237,14 +237,18 @@ def main(args):
 
         for sample in tqdm(test_dataloader):
 
-            graph, cross_graph, M, S, Y, V = sample
+            graph, cross_graph, M, S, Y, V  = sample
+            graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in graph]
+            cross_graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in cross_graph]
+            graph = dgl.batch(graph)
+            cross_graph = dgl.batch(cross_graph)
 
-            graph = graph.to(device)
-            cross_graph = cross_graph.to(device)
             M = M.to(device)
             S = S.to(device)
             Y = Y.to(device)
-            V = V.to(device)
+            V = V.to(device) 
+            graph = graph.to(device)
+            cross_graph = cross_graph.to(device)
 
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
