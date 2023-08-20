@@ -84,9 +84,13 @@ class BaseDataset(Dataset):
 
         # iso to class
         Y = 1 if "iso" in key else 0
+        g1 = dgl.graph(([0, 1], [2, 3]))
+        g2 = dgl.graph(([1], [2]))
 
         # if n1+n2 > 300 : return None
         sample = {
+            "g1": g1,
+            "g2": g2,
             "H": H,
             "Y": Y,
             "V": valid,
