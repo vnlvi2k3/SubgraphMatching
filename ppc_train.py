@@ -205,16 +205,18 @@ def main(args):
         for sample in tqdm(train_dataloader):
             model.zero_grad()
 
-            M, S, Y, V  = sample
+            graph, cross_graph, M, S, Y, V  = sample
+            graph = [dgl.from_networkx(item) for item in graph]
+            cross_graph = [dgl.from_networkx(item) for item in cross_graph]
+            graph = dgl.batch(graph)
+            cross_graph = dgl.batch(cross_graph)
 
             M = M.to(device)
             S = S.to(device)
             Y = Y.to(device)
             V = V.to(device) 
-            g1 = dgl.graph(([0, 1], [2, 3]))
-            g2 = dgl.graph(([1], [2]))
-            graph = dgl.batch([g1, g2])
-            cross_graph = dgl.batch([g1, g2])
+            graph = graph.to(device)
+            cross_graph = cross_graph.to(device)
 
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
