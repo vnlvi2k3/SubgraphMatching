@@ -163,4 +163,4 @@ def collate_fn(batch):
     Y = torch.from_numpy(Y).float()
     V = torch.from_numpy(V).float()
 
-    return graph, cross_graph, M, S, Y, V
+    return  M, S, Y, V
