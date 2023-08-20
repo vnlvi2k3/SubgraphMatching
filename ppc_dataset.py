@@ -85,13 +85,13 @@ class BaseDataset(Dataset):
 
         # iso to class
         Y = 1 if "iso" in key else 0
-        g1 = nx.wheel_graph(5)
-        g2 = nx.wheel_graph(6)
+        # g1 = nx.wheel_graph(5)
+        # g2 = nx.wheel_graph(6)
 
         # if n1+n2 > 300 : return None
         sample = {
-            "g1": g1,
-            "g2": g2,
+            "g1": m1,
+            "g2": m2,
             "H": H,
             "Y": Y,
             "V": valid,
