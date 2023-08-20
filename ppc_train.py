@@ -212,10 +212,10 @@ def main(args):
             cross_graph = [dgl.from_networkx(item) for item in cross_graph]
             graph = dgl.batch(graph)
             cross_graph = dgl.batch(cross_graph)
-            graph.ndata["coords"] = torch.cat(X_pt, dim=0)
-            graph.ndata["feat"] = torch.cat(H_pt, dim=0)
-            cross_graph.ndata["coords"] = torch.cat(X_pt, dim=0)
-            cross_graph.ndata["feat"] = torch.cat(H_pt, dim=0)
+            # graph.ndata["coords"] = torch.cat(X_pt, dim=0)
+            # graph.ndata["feat"] = torch.cat(H_pt, dim=0)
+            # cross_graph.ndata["coords"] = torch.cat(X_pt, dim=0)
+            # cross_graph.ndata["feat"] = torch.cat(H_pt, dim=0)
 
             M = M.to(device)
             S = S.to(device)
