@@ -85,8 +85,8 @@ class BaseDataset(Dataset):
 
         # iso to class
         Y = 1 if "iso" in key else 0
-        g1 = dgl.graph(([0, 1], [2, 3]))
-        g2 = dgl.graph(([1], [2]))
+        g1 = nx.wheel_graph(5)
+        g2 = nx.wheel_graph(6)
 
         # if n1+n2 > 300 : return None
         sample = {
