@@ -82,10 +82,10 @@ class BaseDataset(Dataset):
         #prepare graph and cross_graph
         src_lst, dst_lst = np.where(agg_adj1==1)
         e = [(i,j) for i,j in zip(src_lst, dst_lst)]
-        graph_pt = dgl.graph(e)
+        graph_pt = nx.Graph(e)
         src_lst_cross, dst_lst_cross = np.where(agg_adj2==1)
         e_cross = [(i,j) for i,j in zip(src_lst_cross, dst_lst_cross)]
-        graph_pt_cross = dgl.graph(e_cross)
+        graph_pt_cross = nx.Graph(e_cross)
         X_pt = []
         for id in m1.nodes:
             X_pt.append(m1.nodes[id]["coords"])
