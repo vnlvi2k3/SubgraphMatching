@@ -94,8 +94,8 @@ class BaseDataset(Dataset):
         X_pt = np.vstack(X_pt)
         X_pt = torch.from_numpy(X_pt).float()
         H_pt = torch.from_numpy(H).float()
-        graph_pt = add_attributes(graph_pt, X_pt, H_pt)
-        graph_pt_cross = add_attributes(graph_pt_cross, X_pt, H_pt)
+        # graph_pt = add_attributes(graph_pt, X_pt, H_pt)
+        # graph_pt_cross = add_attributes(graph_pt_cross, X_pt, H_pt)
 
         # node indice for aggregation
         valid = np.zeros((n1 + n2,))
@@ -125,6 +125,8 @@ class BaseDataset(Dataset):
             "V": valid,
             "mapping": mapping_matrix,
             "same_label": same_label_matrix,
+            "X_pt": X_pt,
+            "H_pt": H_pt,
         }
 
         return sample
@@ -161,6 +163,8 @@ def collate_fn(batch):
 
     graph = []
     cross_graph = []
+    X_pt = []
+    H_pt = []
 
     for i in range(len(batch)):
         natom = len(batch[i]["H"])
@@ -171,10 +175,12 @@ def collate_fn(batch):
         V[i, :natom] = batch[i]["V"]
         graph.append(batch[i]["graph"])
         cross_graph.append(batch[i]["cross_graph"])
+        X_pt.append(batch[i]["X_pt"])
+        H_pt.append(batch[i]["H_pt"])
 
     M = torch.from_numpy(M).float()
     S = torch.from_numpy(S).float()
     Y = torch.from_numpy(Y).float()
     V = torch.from_numpy(V).float()
 
-    return graph, cross_graph, M, S, Y, V
+    return graph, cross_graph, M, S, Y, V, X_pt, H_pt
