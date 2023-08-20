@@ -2,19 +2,18 @@ import argparse
 import os
 import pickle
 import time
-import itertools
 
 import numpy as np
+import torch
+import torch.nn as nn
 import utils
 from collections import defaultdict
 from ppc_dataset import BaseDataset, collate_fn, UnderSampler
 from kabsch import kabsch_rmsd
-from gnn import gnn
+from ppc_model import gnn
 from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-import torch
-import torch.nn as nn
 import dgl
 
 parser = argparse.ArgumentParser()
@@ -72,6 +71,7 @@ parser.add_argument("--test_keys", help="test keys",
 parser.add_argument("--tag", help="Additional tag for saving and logging folder",
                     type=str, default="")
 
+
 #new args:
 parser.add_argument('-nonlin', type=str, default='lkyrelu', choices=['swish', 'lkyrelu'])
 parser.add_argument('-cross_msgs', default=True, action='store_true')
@@ -89,7 +89,6 @@ parser.add_argument('-residue_emb_dim', type=int, default=64, required=False, he
 parser.add_argument('-iegmn_lay_hid_dim', type=int, default=64, required=False)
 parser.add_argument('-num_att_heads', type=int, default=50, required=False)
 parser.add_argument('-iegmn_n_lays', type=int, default=5, required=False)
-
 
 
 def main(args):
@@ -160,7 +159,6 @@ def main(args):
         shuffle=False,
         num_workers=args.num_workers,
         collate_fn=collate_fn,
-        # sampler = train_sampler
     )
     test_dataloader = DataLoader(
         test_dataset,
@@ -206,16 +204,17 @@ def main(args):
         model.train()
         for sample in tqdm(train_dataloader):
             model.zero_grad()
-            graph, cross_graph, H, M, S, Y, V, _ = sample
-            graph, cross_graph, H, M, S, Y, V = (
-                graph.to(device),
-                cross_graph.to(device),
-                H.to(device),
-                M.to(device),
-                S.to(device),
-                Y.to(device),
-                V.to(device),
-            )
+
+            graph, cross_graph, M, S, Y, V  = sample
+            print("batch num nodes:\n", graph.batch_num_nodes())
+
+            graph = graph.to(device)
+            cross_graph = cross_graph.to(device)
+
+            M = M.to(device)
+            S = S.to(device)
+            Y = Y.to(device)
+            V = V.to(device) 
 
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
@@ -235,25 +234,25 @@ def main(args):
         st_eval = time.time()
 
         for sample in tqdm(test_dataloader):
-            graph, cross_graph, H, M, S, Y, V, _ = sample
-            graph, cross_graph, H, M, S, Y, V = (
-                graph.to(device),
-                cross_graph.to(deivce),
-                H.to(device),
-                M.to(device),
-                S.to(device),
-                Y.to(device),
-                V.to(device),
-            )
 
-            # Test neural network
+            graph, cross_graph, M, S, Y, V = sample
+
+            graph = graph.to(device)
+            cross_graph = cross_graph.to(device)
+            M = M.to(device)
+            S = S.to(device)
+            Y = Y.to(device)
+            V = V.to(device)
+
+            # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
                 X=(graph, cross_graph, V), attn_masking=(M, S), training=True
             )
                         
             loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
+            loss.backward()
+            optimizer.step()
 
-            
             # Collect loss, true label and predicted label
             test_losses.append(loss.data.cpu().item())
             test_true.append(Y.data.cpu().numpy())
