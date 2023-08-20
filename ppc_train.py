@@ -205,11 +205,15 @@ def main(args):
         for sample in tqdm(train_dataloader):
             model.zero_grad()
 
-            graph, cross_graph, M, S, Y, V  = sample
-            print("batch num nodes:\n", graph.batch_num_nodes())
+            M, S, Y, V  = sample
+            g1 = dgl.graph(([0, 1], [2, 3]))
+            g2 = dgl.graph(([1], [2]))
+            graph = dgl.batch([g1, g2])
+            cross_graph = dgl.batch([g1, g2])
 
             graph = graph.to(device)
             cross_graph = cross_graph.to(device)
+            print("batch num nodes:\n", graph.batch_num_nodes())
 
             M = M.to(device)
             S = S.to(device)
