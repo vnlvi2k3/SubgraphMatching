@@ -114,7 +114,7 @@ class BaseDataset(Dataset):
             "same_label": same_label_matrix,
         }
 
-        return graph_pt, graph_pt_cross, H, Y, valid, mapping_matrix, same_label_matrix
+        return H, Y, valid, mapping_matrix, same_label_matrix
 
 
 class UnderSampler(Sampler):
@@ -139,9 +139,7 @@ class UnderSampler(Sampler):
 
 
 def collate_fn(batch):
-    graph, cross_graph, H_lst, Y_lst, valid_lst, mapping_lst, label_lst = map(list, zip(*batch))
-    graph = dgl.batch(graph)
-    cross_graph = dgl.batch(cross_graph)
+    H_lst, Y_lst, valid_lst, mapping_lst, label_lst = map(list, zip(*batch))
     max_natoms = max(len(item) for item in H_lst)
 
     M = np.zeros((len(batch), max_natoms, max_natoms))
