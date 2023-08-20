@@ -205,7 +205,7 @@ def main(args):
         for sample in tqdm(train_dataloader):
             model.zero_grad()
 
-            graph, cross_graph, M, S, Y, V, X_pt, H_pt = sample
+            graph, cross_graph, M, S, Y, V = sample
             for i in range(len(graph)):
                 print(graph[i].number_of_nodes())
             graph = [dgl.from_networkx(item) for item in graph]
