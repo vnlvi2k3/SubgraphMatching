@@ -206,14 +206,6 @@ def main(args):
             model.zero_grad()
 
             M, S, Y, V  = sample
-            g1 = dgl.graph(([0, 1], [2, 3]))
-            g2 = dgl.graph(([1], [2]))
-            graph = dgl.batch([g1, g2])
-            cross_graph = dgl.batch([g1, g2])
-
-            graph = graph.to(device)
-            cross_graph = cross_graph.to(device)
-            print("batch num nodes:\n", graph.batch_num_nodes())
 
             M = M.to(device)
             S = S.to(device)
@@ -222,7 +214,7 @@ def main(args):
 
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
-                X=(graph, cross_graph, V), attn_masking=(M, S), training=True
+                X=(V), attn_masking=(M, S), training=True
             )
                         
             loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
