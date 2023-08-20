@@ -94,8 +94,8 @@ class BaseDataset(Dataset):
         X_pt = np.vstack(X_pt)
         X_pt = torch.from_numpy(X_pt).float()
         H_pt = torch.from_numpy(H).float()
-        graph_pt = add_attributes(graph_pt, X_pt, H_pt)
-        graph_pt_cross = add_attributes(graph_pt_cross, X_pt, H_pt)
+        # graph_pt = add_attributes(graph_pt, X_pt, H_pt)
+        # graph_pt_cross = add_attributes(graph_pt_cross, X_pt, H_pt)
 
         # node indice for aggregation
         valid = np.zeros((n1 + n2,))
