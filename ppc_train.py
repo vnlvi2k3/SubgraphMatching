@@ -206,8 +206,12 @@ def main(args):
             model.zero_grad()
 
             graph, cross_graph, M, S, Y, V, X_pt, H_pt = sample
+            s = 0
             for i in range(len(graph)):
-                print(graph[i].number_of_nodes())
+                s = s + graph[i].number_of_nodes()
+            print(s)
+            print(X_pt.shape)
+            print(H_pt.shape)
             graph = [dgl.from_networkx(item) for item in graph]
             cross_graph = [dgl.from_networkx(item) for item in cross_graph]
             graph = dgl.batch(graph)
