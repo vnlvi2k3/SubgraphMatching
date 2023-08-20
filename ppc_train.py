@@ -205,13 +205,17 @@ def main(args):
         for sample in tqdm(train_dataloader):
             model.zero_grad()
 
-            graph, cross_graph, M, S, Y, V  = sample
+            graph, cross_graph, M, S, Y, V, X_pt, H_pt = sample
             for i in range(len(graph)):
                 print(graph[i].number_of_nodes())
-            graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in graph]
-            cross_graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in cross_graph]
+            graph = [dgl.from_networkx(item) for item in graph]
+            cross_graph = [dgl.from_networkx(item) for item in cross_graph]
             graph = dgl.batch(graph)
             cross_graph = dgl.batch(cross_graph)
+            graph.ndata["coords"] = torch.cat(X_pt, dim=0)
+            graph.ndata["feat"] = torch.cat(H_pt, dim=0)
+            cross_graph.ndata["coords"] = torch.cat(X_pt, dim=0)
+            cross_graph.ndata["feat"] = torch.cat(H_pt, dim=0)
 
             M = M.to(device)
             S = S.to(device)
