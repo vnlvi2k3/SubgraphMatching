@@ -131,7 +131,8 @@ def collate_fn(batch):
     Y = np.zeros((len(batch),))
     V = np.zeros((len(batch), max_natoms))
 
-    keys = []
+    graph = []
+    cross_graph = []
 
     for i in range(len(batch)):
         natom = len(batch[i]["H"])
@@ -140,10 +141,12 @@ def collate_fn(batch):
         S[i, :natom, :natom] = batch[i]["same_label"]
         Y[i] = batch[i]["Y"]
         V[i, :natom] = batch[i]["V"]
+        graph.append(batch[i]["g1"])
+        cross_graph.append(batch[i]["g2"])
 
     M = torch.from_numpy(M).float()
     S = torch.from_numpy(S).float()
     Y = torch.from_numpy(Y).float()
     V = torch.from_numpy(V).float()
 
-    return  M, S, Y, V
+    return  graph, cross_graph, M, S, Y, V
