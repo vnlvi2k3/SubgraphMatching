@@ -174,8 +174,7 @@ class IEGMN_Layer(nn.Module):
     
 
                 
-    def forward(self, graph, h_feats, coords , original_node_features, original_coords,
-                 bacth_sub_numnode,  get_attention=False):
+    def forward(self, graph, coords, h_feats , original_coords, original_node_features, bacth_sub_numnode,  get_attention=False):
         with graph.local_scope():
             #X_i, H_i : current node's coords and features
             graph.ndata['x_now'] = coords
