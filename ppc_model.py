@@ -114,8 +114,8 @@ class gnn(torch.nn.Module):
         c_hs = c_hs / batch_sub_numnode.unsqueeze(-1).repeat(1, c_hs.size(-1))
 
         #Update coords node's data for graph and cross graph
-        graph.ndata["upd_coords"] = X_pt
-        cross_graph.ndata["upd_coords"] = X_pt
+        # graph.ndata["upd_coords"] = X_pt
+        # cross_graph.ndata["upd_coords"] = X_pt
 
         return c_hs, graph, F.normalize(attention)
 
@@ -147,11 +147,11 @@ class gnn(torch.nn.Module):
         c_hs = c_hs.view(-1)
         attn_loss = self.cal_attn_loss(self.cal_atten_batch2(n1, n, attention), attn_masking)
         rmsd_loss = self.cal_rmsd_loss(c_hs, graph, self.cal_atten_batch1(n1, n, attention), n1, n)
-        pairdst_loss = self.cal_pairdst_loss(graph)
+        # pairdst_loss = self.cal_pairdst_loss(graph)
 
         # note that if you don't use concrete dropout, regularization 1-2 is zero
         if training:
-            return c_hs, attn_loss, rmsd_loss, pairdst_loss 
+            return c_hs, attn_loss, rmsd_loss
         else:
             return c_hs
 
@@ -175,8 +175,8 @@ class gnn(torch.nn.Module):
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
         mapping = F.gumbel_softmax(attention, tau=1, hard=True)
         for i, g in enumerate(batch_lst):
-            P = g.ndata['upd_coords'][:n1[i],:]
-            Q = g.ndata['upd_coords'][n1[i]:,:]
+            P = g.ndata['coords'][:n1[i],:]
+            Q = g.ndata['coords'][n1[i]:,:]
             Q = torch.mm(mapping[i][:n1[i],:n2[i]], Q)
             P_mean = P.mean(dim=0)
             Q_mean = Q.mean(dim=0)
