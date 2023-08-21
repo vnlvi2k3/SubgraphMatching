@@ -151,6 +151,8 @@ class gnn(torch.nn.Module):
 
         # note that if you don't use concrete dropout, regularization 1-2 is zero
         print("attn", attn_loss.shape)
+        print("rmsd", rmsd_loss.shape)
+        print("pair", pairdst_loss.shape)
         if training:
             return c_hs, attn_loss, rmsd_loss, pairdst_loss 
         else:
