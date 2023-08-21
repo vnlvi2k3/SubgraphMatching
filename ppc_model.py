@@ -92,7 +92,7 @@ class gnn(torch.nn.Module):
             c_hs = c_hs2 - c_hs1
             c_hs = F.dropout(c_hs, p=self.dropout_rate, training=self.training)
 
-        print("p2", p2.shape)
+        print("p2", p2)
         c_hs = c_hs * c_valid.unsqueeze(-1).repeat(1, 1, c_hs.size(-1))
         c_hs = c_hs.sum(1) / c_valid.sum(1, keepdim=True)
 
