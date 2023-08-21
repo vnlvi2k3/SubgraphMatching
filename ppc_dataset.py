@@ -32,7 +32,7 @@ def sum_var_parts(tsize, lens):
     )
     M = torch.sparse_coo_tensor(
         indices,
-        torch.ones(t_size_0, dtype=torch.float32),
+        torch.ones(tsize, dtype=torch.float32),
         size=[lens.size(0), tsize]
     )
     return M 
