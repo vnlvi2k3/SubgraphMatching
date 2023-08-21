@@ -205,7 +205,7 @@ def main(args):
         for sample in tqdm(train_dataloader):
             model.zero_grad()
 
-            graph, cross_graph, M, S, Y, V, X_pt, H_pt = sample
+            graph, cross_graph, M, S, Y, V, X_pt, H_pt, p1, p2 = sample
             s = 0
             for i in range(len(graph)):
                 s = s + graph[i].number_of_nodes()
@@ -225,13 +225,15 @@ def main(args):
             S = S.to(device)
             Y = Y.to(device)
             V = V.to(device) 
+            p1 = p1.to(device)
+            p2 = p2.to(device)
             graph = graph.to(device)
             cross_graph = cross_graph.to(device)
             #print("graph:\n", graph.batch_num_nodes(),"shape 1:\n" , graph.ndata["feat"].shape, "shape 2:\n" , graph.ndata["coords"].shape, "feat:\n" , graph.ndata["feat"][0],"coord:\n",graph.ndata["coords"][0])
 
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
-                X=(graph, cross_graph, V), attn_masking=(M, S), training=True
+                X=(graph, cross_graph, V, p1, p2), attn_masking=(M, S), training=True
             )
                         
             loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
@@ -248,7 +250,7 @@ def main(args):
 
         for sample in tqdm(test_dataloader):
 
-            graph, cross_graph, M, S, Y, V  = sample
+            graph, cross_graph, M, S, Y, V, p1, p2  = sample
             graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in graph]
             cross_graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in cross_graph]
             graph = dgl.batch(graph)
@@ -258,12 +260,14 @@ def main(args):
             S = S.to(device)
             Y = Y.to(device)
             V = V.to(device) 
+            p1 = p1.to(device)
+            p2 = p2.to(device)
             graph = graph.to(device)
             cross_graph = cross_graph.to(device)
 
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
-                X=(graph, cross_graph, V), attn_masking=(M, S), training=True
+                X=(graph, cross_graph, V, p1, p2), attn_masking=(M, S), training=True
             )
                         
             loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
