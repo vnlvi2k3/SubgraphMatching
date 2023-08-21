@@ -175,7 +175,7 @@ def collate_fn(batch):
         M[i, :natom, :natom] = batch[i]["mapping"]
         S[i, :natom, :natom] = batch[i]["same_label"]
         Y[i] = batch[i]["Y"]
-        p2.append(batch[i]["Y"])
+        p2.append(batch[i]["V"])
         V[i, :natom] = batch[i]["V"]
         graph.append(batch[i]["graph"])
         cross_graph.append(batch[i]["cross_graph"])
