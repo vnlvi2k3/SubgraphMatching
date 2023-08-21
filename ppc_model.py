@@ -109,9 +109,13 @@ class gnn(torch.nn.Module):
             c_hs = c_hs2 - c_hs1
             c_hs = F.dropout(c_hs, p=self.dropout_rate, training=self.training)
 
+        print("shape1:\n", c_hs.shape)
         c_hs = c_hs * p2.unsqueeze(-1).repeat(1, c_hs.size(-1))
+        print("shape2:\n", c_hs.shape)
         c_hs = sum_var_parts(c_hs, graph.batch_num_nodes())
+        print("shape3:\n", c_hs.shape)
         c_hs = c_hs / batch_sub_numnode.unsqueeze(-1).repeat(1, c_hs.size(-1))
+        print("shape4:\n", c_hs.shape)
 
         #Update coords node's data for graph and cross graph
         graph.ndata["upd_coords"] = X_pt
