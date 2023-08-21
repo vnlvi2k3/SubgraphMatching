@@ -150,6 +150,7 @@ class gnn(torch.nn.Module):
         pairdst_loss = self.cal_pairdst_loss(graph)
 
         # note that if you don't use concrete dropout, regularization 1-2 is zero
+        print("attn", attn_loss.shape)
         if training:
             return c_hs, attn_loss, rmsd_loss, pairdst_loss 
         else:
