@@ -222,8 +222,6 @@ def main(args):
             p2 = p2.to(device)
             graph = graph.to(device)
             cross_graph = cross_graph.to(device)
-            #print("graph:\n", graph.batch_num_nodes(),"shape 1:\n" , graph.ndata["feat"].shape, "shape 2:\n" , graph.ndata["coords"].shape, "feat:\n" , graph.ndata["feat"][0],"coord:\n",graph.ndata["coords"][0])
-
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
                 X=(graph, cross_graph, V, p2), attn_masking=(M, S), training=True
@@ -243,25 +241,29 @@ def main(args):
 
         for sample in tqdm(test_dataloader):
 
-            graph, cross_graph, M, S, Y, V  = sample
-            graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in graph]
-            cross_graph = [dgl.from_networkx(item, node_attrs = ['coords', 'feat']) for item in cross_graph]
+            graph, cross_graph, M, S, Y, V, X_pt, H_pt, p2 = sample
+            graph = [dgl.from_networkx(item) for item in graph]
+            cross_graph = [dgl.from_networkx(item) for item in cross_graph]
             graph = dgl.batch(graph)
             cross_graph = dgl.batch(cross_graph)
+            graph.ndata["coords"] = X_pt
+            graph.ndata["feat"] = H_pt
+            cross_graph.ndata["coords"] = X_pt
+            cross_graph.ndata["feat"] = H_pt
 
             M = M.to(device)
             S = S.to(device)
             Y = Y.to(device)
             V = V.to(device) 
+            p2 = p2.to(device)
             graph = graph.to(device)
             cross_graph = cross_graph.to(device)
-
             # Train neural network
             pred, attn_loss, rmsd_loss, pairdst_loss = model(
-                X=(graph, cross_graph, V), attn_masking=(M, S), training=True
+                X=(graph, cross_graph, V, p2), attn_masking=(M, S), training=True
             )
                         
-            loss = loss_fn(pred, Y) + attn_loss + rmsd_loss, pairdst_loss
+            loss = loss_fn(pred, Y) + attn_loss + rmsd_loss + pairdst_loss
             loss.backward()
             optimizer.step()
 
