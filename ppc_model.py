@@ -145,7 +145,7 @@ class gnn(torch.nn.Module):
         # fully connected NN
         c_hs = self.fully_connected(c_hs)
         c_hs = c_hs.view(-1)
-        attn_loss = self.cal_attn_loss(self.cal_atten_batch2(attention, n1, n), attn_masking)
+        attn_loss = self.cal_attn_loss(self.cal_atten_batch2(n1, n, attention), attn_masking)
         rmsd_loss = self.cal_rmsd_loss(c_hs, graph, self.cal_atten_batch1(n1, n, attention), n1, n)
         pairdst_loss = self.cal_pairdst_loss(graph)
 
