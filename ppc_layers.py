@@ -91,9 +91,6 @@ def apply_final_h_layer_norm(g, h, norm_type, norm_layer):
 def compute_cross_attention(queries, keys, values, mask, cross_msgs):
     if not cross_msgs:
         return queries * 0.
-    print("mask:\n",mask.shape)
-    print("queries:\n",queries.shape)
-    print("keys:\n",keys.shape)
     a = mask * torch.mm(queries, torch.transpose(keys, 1, 0)) - 1000. * (1. - mask)
     a_x = torch.softmax(a, dim=1)  # i->j, NxM, a_x.sum(dim=1) = torch.ones(N)
     attention_x = torch.mm(a_x, values)  # (N,d)
@@ -228,6 +225,11 @@ class IEGMN_Layer(nn.Module):
             #data[x_update] : sum_j (x_i - x_j) * phi^x(m_{i->j}) : X_update coordinate
             graph.update_all(fn.copy_e('x_moment', 'm'), fn.mean('m', 'x_update'))
             graph.update_all(fn.copy_e('msg', 'm'), fn.mean('m', 'aggr_msg'))
+            
+            print("x connection:\n", self.x_connection_init.shape)
+            print("orig:\n", original_coords.shape)
+            print("x now:\n", graph.ndata['x_now'].shape)
+            print("x update:\n", graph.ndata['x_update'].shape)
             
             x_final = self.x_connection_init * original_coords + \
                             (1.-self.x_connection_init)*graph.ndata['x_now'] +\
