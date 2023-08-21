@@ -169,7 +169,7 @@ def collate_fn(batch):
 
     for i in range(len(batch)):
         natom = len(batch[i]["H"])
-        p2.append(natom)
+        p2.append(batch[i]["V"])
 
         M[i, :natom, :natom] = batch[i]["mapping"]
         S[i, :natom, :natom] = batch[i]["same_label"]
@@ -188,6 +188,7 @@ def collate_fn(batch):
     H_pt = np.vstack(H_pt)
     X_pt = torch.from_numpy(X_pt).float()
     H_pt = torch.from_numpy(H_pt).float()
-    p2 = torch.tensor(p2)
+    p2 = np.concatenate(p2, axis=0)
+    p2 = torch.from_numpy(p2).float()
 
     return graph, cross_graph, M, S, Y, V, X_pt, H_pt, p2
