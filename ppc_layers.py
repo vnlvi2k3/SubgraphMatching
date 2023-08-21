@@ -91,6 +91,9 @@ def apply_final_h_layer_norm(g, h, norm_type, norm_layer):
 def compute_cross_attention(queries, keys, values, mask, cross_msgs):
     if not cross_msgs:
         return queries * 0.
+    print("mask:\n",mask.shape)
+    print("queries:\n",queries.shape)
+    print("keys:\n",keys.shape)
     a = mask * torch.mm(queries, torch.transpose(keys, 1, 0)) - 1000. * (1. - mask)
     a_x = torch.softmax(a, dim=1)  # i->j, NxM, a_x.sum(dim=1) = torch.ones(N)
     attention_x = torch.mm(a_x, values)  # (N,d)
