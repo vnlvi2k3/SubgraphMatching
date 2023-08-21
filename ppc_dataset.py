@@ -167,6 +167,7 @@ def collate_fn(batch):
     H_pt = []
     nodes = 0
     p2 = []
+    lens = []
 
     for i in range(len(batch)):
         natom = len(batch[i]["H"])
@@ -181,6 +182,7 @@ def collate_fn(batch):
         cross_graph.append(batch[i]["cross_graph"])
         X_pt.append(batch[i]["X_pt"])
         H_pt.append(batch[i]["H"])
+        lens.append(natom)
 
     p2 = np.concatenate(p2, axis=0)
     M = torch.from_numpy(M).float()
@@ -192,8 +194,8 @@ def collate_fn(batch):
     X_pt = torch.from_numpy(X_pt).float()
     H_pt = torch.from_numpy(H_pt).float()
     
-    lens = torch.sum(V, axis=1).long()
-    p1 = sum_var_parts(nodes, lens)
+    lens = torch.tensor(lens)
+    p1 = sum_var_parts(lens.sum(), lens)
     p2 = torch.from_numpy(p2).float()
 
     return graph, cross_graph, M, S, Y, V, X_pt, H_pt, p1, p2
