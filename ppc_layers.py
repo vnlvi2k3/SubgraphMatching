@@ -226,7 +226,6 @@ class IEGMN_Layer(nn.Module):
             graph.update_all(fn.copy_e('x_moment', 'm'), fn.mean('m', 'x_update'))
             graph.update_all(fn.copy_e('msg', 'm'), fn.mean('m', 'aggr_msg'))
             
-            print("x connection:\n", self.x_connection_init.shape)
             print("orig:\n", original_coords.shape)
             print("x now:\n", graph.ndata['x_now'].shape)
             print("x update:\n", graph.ndata['x_update'].shape)
