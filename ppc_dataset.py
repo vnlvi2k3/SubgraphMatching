@@ -21,18 +21,21 @@ def onehot_encoding_node(m, embedding_dim):
     H = np.array(H)
     return H
 
-def add_attributes(graph, coords, features):
-    nodes = np.array(list(graph.nodes))
-    edges = np.array(list(graph.edges))
-    labelled_nodes = [
-        (nodes[k], {"feat": 0.0, "coords": 0.0})
-        for k in range(len(nodes))
-    ]
-    G = nx.Graph()
-    G.add_nodes_from(labelled_nodes)
-    G.add_edges_from(edges)
-
-    return G
+def sum_var_parts(tsize, lens):
+    ind_x = torch.repeat_interleave(torch.arange(lens.size(0)), lens)
+    indices = torch.cat(
+        [
+            torch.unsqueeze(ind_x, dim=0),
+            torch.unsqueeze(torch.arange(tsize), dim=0)
+        ],
+        dim=0
+    )
+    M = torch.sparse_coo_tensor(
+        indices,
+        torch.ones(t_size_0, dtype=torch.float32),
+        size=[lens.size(0), tsize]
+    )
+    return M 
 
 class BaseDataset(Dataset):
     def __init__(self, keys, data_dir, embedding_dim=20):
@@ -162,19 +165,24 @@ def collate_fn(batch):
     cross_graph = []
     X_pt = []
     H_pt = []
+    nodes = 0
+    p2 = []
 
     for i in range(len(batch)):
         natom = len(batch[i]["H"])
+        nodes = nodes + natom
 
         M[i, :natom, :natom] = batch[i]["mapping"]
         S[i, :natom, :natom] = batch[i]["same_label"]
         Y[i] = batch[i]["Y"]
+        p2.append(batch[i]["Y"])
         V[i, :natom] = batch[i]["V"]
         graph.append(batch[i]["graph"])
         cross_graph.append(batch[i]["cross_graph"])
         X_pt.append(batch[i]["X_pt"])
         H_pt.append(batch[i]["H"])
 
+    p2 = np.concatenate(p2, axis=0)
     M = torch.from_numpy(M).float()
     S = torch.from_numpy(S).float()
     Y = torch.from_numpy(Y).float()
@@ -183,5 +191,9 @@ def collate_fn(batch):
     H_pt = np.vstack(H_pt)
     X_pt = torch.from_numpy(X_pt).float()
     H_pt = torch.from_numpy(H_pt).float()
+    
+    lens = torch.sum(V, axis=1).long()
+    p1 = sum_var_parts(nodes, lens)
+    p2 = torch.from_numpy(p2).float()
 
-    return graph, cross_graph, M, S, Y, V, X_pt, H_pt
+    return graph, cross_graph, M, S, Y, V, X_pt, H_pt, p1, p2
