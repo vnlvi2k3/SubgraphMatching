@@ -18,7 +18,7 @@ import dgl
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--lr", help="learning rate", type=float, default=0.0001)
-parser.add_argument("--epoch", help="epoch", type=int, default=20)
+parser.add_argument("--epoch", help="epoch", type=int, default=30)
 parser.add_argument("--ngpu", help="number of gpu", type=int, default=1)
 parser.add_argument("--dataset", help="dataset", type=str, default="tiny")
 parser.add_argument("--batch_size", help="batch_size", type=int, default=32)
