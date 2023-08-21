@@ -209,7 +209,7 @@ class gnn(torch.nn.Module):
             g.apply_edges(self.calculate_updnodes_dst)
             dst_loss = (g.edata["upd_dst"] - g.edata["dst"]).sum()
             batch_pairwise_loss = batch_pairwise_loss + dst_loss
-        batch_pairwise_loss = batch_pairwise_loss / float(len(batch_graph))
+        batch_pairwise_loss = batch_pairwise_loss / float(len(batch_lst))
         return batch_pairwise_loss 
 
     def get_refined_adjs2(self, X):
