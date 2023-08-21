@@ -4,6 +4,23 @@ import torch.nn.functional as F
 from ppc_layers import IEGMN_Layer
 import dgl
 
+def sum_var_parts(t, lens):
+    t_size_0 = t.size(0)
+    ind_x = torch.repeat_interleave(torch.arange(lens.size(0)).to(lens.device), lens)
+    indices = torch.cat(
+        [
+            torch.unsqueeze(ind_x, dim=0),
+            torch.unsqueeze(torch.arange(t_size_0).to(lens.device), dim=0)
+        ],
+        dim=0
+    )
+    M = torch.sparse_coo_tensor(
+        indices,
+        torch.ones(t_size_0, dtype=torch.float32),
+        size=[lens.size(0), t_size_0],
+        device = t.device
+    )
+    return M @ t
 
 class gnn(torch.nn.Module):
     def __init__(self, args):
@@ -92,9 +109,9 @@ class gnn(torch.nn.Module):
             c_hs = c_hs2 - c_hs1
             c_hs = F.dropout(c_hs, p=self.dropout_rate, training=self.training)
 
-        print("p2", p2)
-        c_hs = c_hs * c_valid.unsqueeze(-1).repeat(1, 1, c_hs.size(-1))
-        c_hs = c_hs.sum(1) / c_valid.sum(1, keepdim=True)
+        c_hs = c_hs * p2.unsqueeze(-1).repeat(1, c_hs.size(-1))
+        c_hs = sum_var_parts(c_hs, graph.batch_num_nodes())
+        c_hs = c_hs.sum(1) / batch_sub_numnode.unsqueeze(-1).repeat(1, c_hs.size(-1))
 
         #Update coords node's data for graph and cross graph
         graph.ndata["upd_coords"] = X_pt
