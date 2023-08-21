@@ -111,7 +111,7 @@ class gnn(torch.nn.Module):
 
         c_hs = c_hs * p2.unsqueeze(-1).repeat(1, c_hs.size(-1))
         c_hs = sum_var_parts(c_hs, graph.batch_num_nodes())
-        c_hs = c_hs.sum(1) / batch_sub_numnode.unsqueeze(-1).repeat(1, c_hs.size(-1))
+        c_hs = c_hs / batch_sub_numnode.unsqueeze(-1).repeat(1, c_hs.size(-1))
 
         #Update coords node's data for graph and cross graph
         graph.ndata["upd_coords"] = X_pt
