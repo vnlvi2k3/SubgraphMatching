@@ -56,7 +56,7 @@ class gnn(torch.nn.Module):
             self.zeros = self.zeros.cuda()
 
     def embede_graph(self, X):
-        graph, cross_graph, c_valid, p1, p2 = X
+        graph, cross_graph, c_valid, p2 = X
         X_pt = graph.ndata['coords']
 
         #First: Embede the feature of graph
@@ -92,8 +92,9 @@ class gnn(torch.nn.Module):
             c_hs = c_hs2 - c_hs1
             c_hs = F.dropout(c_hs, p=self.dropout_rate, training=self.training)
 
-        c_hs = p1 @ (c_hs * p2.unsqueeze(-1).repeat(1, c_hs.size(-1)))
-        c_hs = c_hs / batch_sub_numnode.unsqueeze(-1).repeat(1, c_hs.size(-1))
+        print("p2", p2.shape)
+        c_hs = c_hs * c_valid.unsqueeze(-1).repeat(1, 1, c_hs.size(-1))
+        c_hs = c_hs.sum(1) / c_valid.sum(1, keepdim=True)
 
         #Update coords node's data for graph and cross graph
         graph.ndata["upd_coords"] = X_pt
@@ -119,7 +120,7 @@ class gnn(torch.nn.Module):
 
     def forward(self, X, attn_masking=None, training=False):
         # embede a graph to a vector
-        graph, cross_graph, c_valid, p1, p2 = X
+        graph, cross_graph, c_valid, p2 = X
         n1 = torch.sum(c_valid, axis=1).long()
         n = cross_graph.batch_num_nodes()
         c_hs, graph, attention = self.embede_graph(X)
