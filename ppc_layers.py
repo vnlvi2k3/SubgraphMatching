@@ -195,10 +195,6 @@ class IEGMN_Layer(nn.Module):
             #cat_input_for_msg = (h_i, h_j, x_rel_mag)
             graph.apply_edges(self.apply_edges1)
             cat_input_for_msg = torch.cat((graph.edata['cat_feat'], x_rel_mag), dim=-1)
-            print("feat:\n", graph.ndata['feat'].shape)
-            print("cat feat shape:\n", graph.edata['cat_feat'].shape)
-            print("x rel shape:\n", x_rel_mag.shape)
-            print("cat shape:\n", cat_input_for_msg.shape)
             #msg = mlp_edge(h_i, h_j, x_rel_mag)
             graph.edata['msg'] = self.edge_mlp(cat_input_for_msg)
             
@@ -228,9 +224,6 @@ class IEGMN_Layer(nn.Module):
             graph.update_all(fn.copy_e('x_moment', 'm'), fn.mean('m', 'x_update'))
             graph.update_all(fn.copy_e('msg', 'm'), fn.mean('m', 'aggr_msg'))
             
-            print("orig:\n", original_coords.shape)
-            print("x now:\n", graph.ndata['x_now'].shape)
-            print("x update:\n", graph.ndata['x_update'].shape)
             
             x_final = self.x_connection_init * original_coords + \
                             (1.-self.x_connection_init)*graph.ndata['x_now'] +\
