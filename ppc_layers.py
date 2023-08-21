@@ -196,6 +196,7 @@ class IEGMN_Layer(nn.Module):
             #cat_input_for_msg = (h_i, h_j, x_rel_mag)
             graph.apply_edges(self.apply_edges1)
             cat_input_for_msg = torch.cat((graph.edata['cat_feat'], x_rel_mag), dim=-1)
+            print("feat:\n", graph.ndata['feat'].shape)
             print("cat feat shape:\n", graph.edata['cat_feat'].shape)
             print("x rel shape:\n", x_rel_mag.shape)
             print("cat shape:\n", cat_input_for_msg.shape)
