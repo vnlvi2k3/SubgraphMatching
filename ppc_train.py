@@ -223,11 +223,11 @@ def main(args):
             graph = graph.to(device)
             cross_graph = cross_graph.to(device)
             # Train neural network
-            pred, attn_loss, rmsd_loss, pairdst_loss = model(
+            pred, attn_loss, rmsd_loss = model(
                 X=(graph, cross_graph, V, p2), attn_masking=(M, S), training=True
             )
                         
-            loss = loss_fn(pred, Y) + attn_loss 
+            loss = loss_fn(pred, Y) + attn_loss + rmsd_loss
             loss.backward()
             optimizer.step()
 
@@ -259,11 +259,11 @@ def main(args):
             graph = graph.to(device)
             cross_graph = cross_graph.to(device)
             # Train neural network
-            pred, attn_loss, rmsd_loss, pairdst_loss = model(
+            pred, attn_loss, rmsd_loss = model(
                 X=(graph, cross_graph, V, p2), attn_masking=(M, S), training=True
             )
                         
-            loss = loss_fn(pred, Y) + attn_loss
+            loss = loss_fn(pred, Y) + attn_loss + rmsd_loss
             loss.backward()
             optimizer.step()
 
