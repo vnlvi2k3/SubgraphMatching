@@ -209,7 +209,7 @@ class IEGMN_Layer(nn.Module):
             #aggr_cross2 (M,d) =  attention.transpose() * value_subgraph (N,d)
             #aggr_cross : concatenate aggr_cross1 and aggr_cross2 as a node data for big graph
             #aggr_cross_msg(i) = sum_j a_{i,j} * h_j
-            mask = get_mask(bacth_sub_numnode, graph.batch_num_nodes(), self.device)
+            mask = get_mask(bacth_sub_numnode, graph.batch_num_nodes() - bacth_sub_numnode, self.device)
             sub_feats, graph_feats = get_features(graph, bacth_sub_numnode)
             attention, aggr_cross1 = compute_cross_attention(self.att_mlp_Q(sub_feats), self.att_mlp_K(graph_feats)
                                                    , self.att_mlp_V(graph_feats), mask, self.cross_msgs) #(n x m), (n x d)
