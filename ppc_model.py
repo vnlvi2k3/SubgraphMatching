@@ -147,7 +147,7 @@ class gnn(torch.nn.Module):
         c_hs = c_hs.view(-1)
         loss_func = nn.MSELoss()
         attn_loss = self.cal_attn_loss(self.cal_atten_batch2(n1, n, attention), attn_masking)
-        rmsd_loss = self.cal_rmsd_loss(loss_func ,c_hs, graph, self.cal_atten_batch1(n1, n, attention), n1, n)
+        rmsd_loss = self.cal_rmsd_loss(loss_func ,c_hs, graph, attention, n1, n)
         # pairdst_loss = self.cal_pairdst_loss(graph)
 
         # note that if you don't use concrete dropout, regularization 1-2 is zero
@@ -182,7 +182,7 @@ class gnn(torch.nn.Module):
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
         PP, QQ = self.get_coords(batch_graph, n1)
         mapping = F.gumbel_softmax(attention, tau=1, hard=True)
-        printf(mapping.shape, "\n", QQ.shape, "\n")
+        print(mapping.shape, "\n", QQ.shape, "\n")
         QQ = torch.mm(mapping, QQ)
         for i in range(len(a)-1):
             P = PP[a[i]:a[i+1],:]
