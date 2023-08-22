@@ -194,7 +194,7 @@ class gnn(torch.nn.Module):
             rmsd = rmsd*prob[i]
             batch_rmsd_loss = batch_rmsd_loss + rmsd
         batch_rmsd_loss = batch_rmsd_loss / float(len(batch_lst))
-        return bacth_rmsd_loss
+        return batch_rmsd_loss
     
     def calculate_nodes_dst(self, edges):
         pdist = nn.PairwiseDistance(p=2)
