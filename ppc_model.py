@@ -174,11 +174,11 @@ class gnn(torch.nn.Module):
         prob = torch.round(pred)
         batch_lst = dgl.unbatch(batch_graph)
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
-        mapping = F.gumbel_softmax(attention, tau=1, hard=True)
+        # mapping = F.gumbel_softmax(attention, tau=1, hard=True)
         for i, g in enumerate(batch_lst):
             P = g.ndata['coords'][:n1[i],:]
-            Q = g.ndata['coords'][n1[i]:,:]
-            Q = torch.mm(mapping[i][:n1[i],:n2[i]], Q)
+            Q = g.ndata['coords'][:n1[i],:]
+            # Q = torch.mm(mapping[i][:n1[i],:n2[i]], Q)
             P_mean = P.mean(dim=0)
             Q_mean = Q.mean(dim=0)
             h = (P - P_mean).T@(Q - Q_mean)
