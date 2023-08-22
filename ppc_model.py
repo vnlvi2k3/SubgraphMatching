@@ -180,7 +180,6 @@ class gnn(torch.nn.Module):
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
         PP, QQ = self.get_coords(batch_graph, n1)
         mapping = F.gumbel_softmax(attention, tau=1, hard=True)
-        print(mapping.shape, "\n", QQ.shape, "\n")
         QQ = torch.mm(mapping, QQ)
         for i in range(len(a)-1):
             P = PP[a[i]:a[i+1],:]
@@ -200,6 +199,7 @@ class gnn(torch.nn.Module):
             rmsd = rmsd*prob[i]
             batch_rmsd_loss = batch_rmsd_loss + rmsd
         batch_rmsd_loss = batch_rmsd_loss / float(len(batch_lst))
+        print("rmsd:", batch_rmsd_loss)
         return batch_rmsd_loss
 
     def get_coords(self, batch_graph, n1):
