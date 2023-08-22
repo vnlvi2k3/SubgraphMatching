@@ -263,7 +263,7 @@ def main(args):
                 X=(graph, cross_graph, V, p2), attn_masking=(M, S), training=True
             )
                         
-            loss = loss_fn(pred, Y) + attn_loss + rmsd_loss
+            loss = attn_loss + rmsd_loss
             loss.backward()
             optimizer.step()
 
