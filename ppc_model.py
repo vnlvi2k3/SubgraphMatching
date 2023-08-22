@@ -178,6 +178,7 @@ class gnn(torch.nn.Module):
             P = g.ndata['coords'][:n1[i],:]
             Q = g.ndata['coords'][n1[i]:,:]
             Q = torch.mm(mapping[i][:n1[i],:n2[i]], Q)
+            print("P, Q, mapping:", P.shape, Q.shape, mapping[i][:n1[i],:n2[i]].shape, "\n")
             P_mean = P.mean(dim=0)
             Q_mean = Q.mean(dim=0)
             h = (P - P_mean).T@(Q - Q_mean)
@@ -192,6 +193,7 @@ class gnn(torch.nn.Module):
             rmsd = rmsd*prob[i]
             batch_rmsd_loss = batch_rmsd_loss + rmsd
         batch_rmsd_loss = batch_rmsd_loss / float(len(n1))
+        print("full rmsd: \n", batch_rmsd_loss)
         return batch_rmsd_loss
     
     def calculate_nodes_dst(self, edges):
