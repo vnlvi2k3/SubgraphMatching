@@ -202,7 +202,11 @@ class gnn(torch.nn.Module):
         batch_lst = dgl.unbatch(batch_graph)
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
         PP, QQ = self.get_coords(batch_graph, n1)
-        mapping = gumbel_softmax(attention, tau=1, hard=True)
+        
+        index = attention.max(1, keepdim=True)[1]
+        mapping = torch.zeros_like(attention).scatter_(1, index, 1.0)
+        
+        # mapping = gumbel_softmax(attention, tau=1, hard=True)
         QQ = torch.mm(mapping, QQ)
         for i in range(len(a)-1):
             P = PP[a[i]:a[i+1],:]
