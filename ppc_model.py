@@ -145,8 +145,9 @@ class gnn(torch.nn.Module):
         # fully connected NN
         c_hs = self.fully_connected(c_hs)
         c_hs = c_hs.view(-1)
+        loss_func = nn.MSELoss()
         attn_loss = self.cal_attn_loss(self.cal_atten_batch2(n1, n, attention), attn_masking)
-        rmsd_loss = self.cal_rmsd_loss(c_hs, graph, self.cal_atten_batch1(n1, n, attention), n1, n)
+        rmsd_loss = self.cal_rmsd_loss(loss_func ,c_hs, graph, self.cal_atten_batch1(n1, n, attention), n1, n)
         # pairdst_loss = self.cal_pairdst_loss(graph)
 
         # note that if you don't use concrete dropout, regularization 1-2 is zero
@@ -168,7 +169,7 @@ class gnn(torch.nn.Module):
 
         return (top / (topabot - top + 1)).sum(0) * self.theta / attention.shape[0]
     
-    def cal_rmsd_loss(self, pred ,batch_graph, attention, n1, n):
+    def cal_rmsd_loss(self, loss_func ,pred ,batch_graph, attention, n1, n):
         n2 = n - n1
         prob = torch.round(pred)
         batch_lst = dgl.unbatch(batch_graph)
@@ -189,7 +190,7 @@ class gnn(torch.nn.Module):
             tt = Q_mean - r@P_mean
             P_predict = (r@P.T).T + tt
             # rmsd = torch.sqrt(torch.mean(torch.sum((P_predict - Q) ** 2, axis=1)))
-            rmsd = nn.MSELoss(P_predict , Q)
+            rmsd = loss_func(P_predict , Q)
             rmsd = rmsd*prob[i]
             batch_rmsd_loss = batch_rmsd_loss + rmsd
         batch_rmsd_loss = batch_rmsd_loss / float(len(batch_lst))
