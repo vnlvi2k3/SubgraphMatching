@@ -174,24 +174,24 @@ class gnn(torch.nn.Module):
         batch_lst = dgl.unbatch(batch_graph)
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
         mapping = F.gumbel_softmax(attention, tau=1, hard=True)
-        for i, g in enumerate(batch_lst):
-            P = g.ndata['coords'][:n1[i],:]
-            Q = g.ndata['coords'][n1[i]:,:]
-            Q = torch.mm(mapping[i][:n1[i],:n2[i]], Q)
-            P_mean = P.mean(dim=0)
-            Q_mean = Q.mean(dim=0)
-            h = (P - P_mean).T@(Q - Q_mean)
-            u, s, vt = torch.linalg.svd(h)
-            v = vt.T
-            d = torch.sign(torch.det(v@u.T))
-            e = torch.tensor([[1,0,0],[0,1,0],[0,0,d]]).to(self.device)
-            r = v@e@u.T
-            tt = Q_mean - r@P_mean
-            P_predict = (r@P.T).T + tt
-            rmsd = torch.sqrt(torch.mean(torch.sum((P_predict - Q) ** 2, axis=1)))
-            rmsd = rmsd*prob[i]
-            batch_rmsd_loss = batch_rmsd_loss + rmsd
-        batch_rmsd_loss = batch_rmsd_loss / (float(len(batch_lst))**3)
+        # for i, g in enumerate(batch_lst):
+        #     P = g.ndata['coords'][:n1[i],:]
+        #     Q = g.ndata['coords'][n1[i]:,:]
+        #     Q = torch.mm(mapping[i][:n1[i],:n2[i]], Q)
+        #     P_mean = P.mean(dim=0)
+        #     Q_mean = Q.mean(dim=0)
+        #     h = (P - P_mean).T@(Q - Q_mean)
+        #     u, s, vt = torch.linalg.svd(h)
+        #     v = vt.T
+        #     d = torch.sign(torch.det(v@u.T))
+        #     e = torch.tensor([[1,0,0],[0,1,0],[0,0,d]]).to(self.device)
+        #     r = v@e@u.T
+        #     tt = Q_mean - r@P_mean
+        #     P_predict = (r@P.T).T + tt
+        #     rmsd = torch.sqrt(torch.mean(torch.sum((P_predict - Q) ** 2, axis=1)))
+        #     rmsd = rmsd*prob[i]
+        #     batch_rmsd_loss = batch_rmsd_loss + rmsd
+        batch_rmsd_loss = batch_rmsd_loss / float(len(batch_lst)
         print("full rmsd: \n", batch_rmsd_loss)
         return batch_rmsd_loss
     
