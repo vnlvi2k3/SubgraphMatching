@@ -203,7 +203,6 @@ def main(args):
                 X=(H, A1, A2, V), attn_masking=(M, S), training=True
             )
                  
-            print("loss1, loss2 :", loss_fn(pred, Y), attn_loss, "\n")
             loss = loss_fn(pred, Y) + attn_loss
             loss.backward()
             optimizer.step()
