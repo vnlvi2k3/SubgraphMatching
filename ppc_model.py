@@ -177,7 +177,7 @@ class gnn(torch.nn.Module):
         # mapping = F.gumbel_softmax(attention, tau=1, hard=True)
         for i, g in enumerate(batch_lst):
             P = g.ndata['coords'][:n1[i],:]
-            Q = g.ndata['coords'][:n1[i],:]
+            Q = g.ndata['coords'][n1[i]: 2*n1[i],:]
             # Q = torch.mm(mapping[i][:n1[i],:n2[i]], Q)
             P_mean = P.mean(dim=0)
             Q_mean = Q.mean(dim=0)
