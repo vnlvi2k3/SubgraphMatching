@@ -4,6 +4,29 @@ import torch.nn.functional as F
 from ppc_layers import IEGMN_Layer
 import dgl
 
+def gumbel_softmax(logits, tau=1, hard=False, eps=1e-10, dim=-1):
+    # type: (Tensor, float, bool, float, int) -> Tensor
+    def _gen_gumbels():
+        gumbels = -torch.empty_like(logits).exponential_().log()
+        if torch.isnan(gumbels).sum() or torch.isinf(gumbels).sum():
+            # to avoid zero in exp output
+            gumbels = _gen_gumbels()
+        return gumbels
+
+    gumbels = _gen_gumbels()  # ~Gumbel(0,1)
+    gumbels = (logits + gumbels) / tau  # ~Gumbel(logits,tau)
+    y_soft = gumbels.softmax(dim)
+
+    if hard:
+        # Straight through.
+        index = y_soft.max(dim, keepdim=True)[1]
+        y_hard = torch.zeros_like(logits).scatter_(dim, index, 1.0)
+        ret = y_hard - y_soft.detach() + y_soft
+    else:
+        # Reparametrization trick.
+        ret = y_soft
+    return ret
+
 def sum_var_parts(t, lens):
     t_size_0 = t.size(0)
     ind_x = torch.repeat_interleave(torch.arange(lens.size(0)).to(lens.device), lens)
@@ -179,8 +202,8 @@ class gnn(torch.nn.Module):
         batch_lst = dgl.unbatch(batch_graph)
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
         PP, QQ = self.get_coords(batch_graph, n1)
-        # mapping = F.gumbel_softmax(attention, tau=1, hard=True)
-        QQ = torch.mm(attention, QQ)
+        mapping = gumbel_softmax(attention, tau=1, hard=True)
+        QQ = torch.mm(mapping, QQ)
         for i in range(len(a)-1):
             P = PP[a[i]:a[i+1],:]
             Q = QQ[a[i]:a[i+1],:]
