@@ -170,7 +170,7 @@ class gnn(torch.nn.Module):
     
     def cal_rmsd_loss(self, pred, batch_graph, attention, n1, n):
         n2 = n - n1
-        prob = torch.round(pred)
+        # prob = torch.round(pred)
         batch_lst = dgl.unbatch(batch_graph)
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
         mapping = F.gumbel_softmax(attention, tau=1, hard=True)
@@ -189,7 +189,7 @@ class gnn(torch.nn.Module):
             tt = Q_mean - r@P_mean
             P_predict = (r@P.T).T + tt
             rmsd = torch.sqrt(((P_predict - Q)**2).sum() / float(Q.shape[0]))
-            rmsd = rmsd*prob[i]
+            # rmsd = rmsd*prob[i]
             batch_rmsd_loss = batch_rmsd_loss + rmsd
         batch_rmsd_loss = batch_rmsd_loss / float(len(n1))
         print("full rmsd: \n", batch_rmsd_loss)
