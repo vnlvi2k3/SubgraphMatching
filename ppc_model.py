@@ -211,8 +211,8 @@ class gnn(torch.nn.Module):
             sub_coords.append(g.ndata["coords"][:n1[i]])
             graph_coords.append(g.ndata["coords"][n1[i]:])
     
-        sub_coords = torch.vstack(sub_feats)
-        graph_coords = torch.vstack(graph_feats)
+        sub_coords = torch.vstack(sub_coords)
+        graph_coords = torch.vstack(graph_coords)
         return sub_coords, graph_coords
     
     def calculate_nodes_dst(self, edges):
