@@ -178,8 +178,8 @@ class gnn(torch.nn.Module):
             P = g.ndata['coords'][:n1[i],:]
             Q = g.ndata['coords'][n1[i]:,:]
             Q = torch.mm(mapping[i][:n1[i],:n2[i]], Q)
-            print("attention mapping:", attention[i][:3], "\n")
-            print("P, Q, mapping:", P[:3], Q[:3], mapping[i][:n1[i],:n2[i]][:3], "\n")
+            print("attention mapping:", attention.shape, "\n")
+            print("P, Q, mapping:", P[:3], Q[:3], mapping[i][:n1[i],:n2[i]].shape, "\n")
             P_mean = P.mean(dim=0)
             Q_mean = Q.mean(dim=0)
             h = (P - P_mean).T@(Q - Q_mean)
