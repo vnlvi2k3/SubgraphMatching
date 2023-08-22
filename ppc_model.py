@@ -191,8 +191,8 @@ class gnn(torch.nn.Module):
         #     rmsd = torch.sqrt(torch.mean(torch.sum((P_predict - Q) ** 2, axis=1)))
         #     rmsd = rmsd*prob[i]
         #     batch_rmsd_loss = batch_rmsd_loss + rmsd
-        batch_rmsd_loss = batch_rmsd_loss / float(len(batch_lst)
-        print("full rmsd: \n", batch_rmsd_loss)
+        # batch_rmsd_loss = batch_rmsd_loss / float(len(batch_lst)
+        # print("full rmsd: \n", batch_rmsd_loss)
         return batch_rmsd_loss
     
     def calculate_nodes_dst(self, edges):
