@@ -182,8 +182,9 @@ class gnn(torch.nn.Module):
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
         PP, QQ = self.get_coords(batch_graph, n1)
         mapping = F.gumbel_softmax(attention, tau=1, hard=True)
+        printf(mapping.shape, "\n", QQ.shape, "\n")
         QQ = torch.mm(mapping, QQ)
-        for i, g in enumerate(batch_lst):
+        for i in range(len(a)-1):
             P = PP[a[i]:a[i+1],:]
             Q = QQ[b[i]:b[i+1],:]
             P_mean = P.mean(dim=0)
