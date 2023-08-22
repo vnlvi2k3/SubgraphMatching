@@ -188,10 +188,10 @@ class gnn(torch.nn.Module):
             r = v@e@u.T
             tt = Q_mean - r@P_mean
             P_predict = (r@P.T).T + tt
-            rmsd = torch.sqrt(((P_predict - Q)**2).sum() / float(Q.shape[0]))
+            rmsd = torch.sqrt(torch.mean(torch.sum((P_predict - Q) ** 2, axis=1)))
             rmsd = rmsd*prob[i]
             batch_rmsd_loss = batch_rmsd_loss + rmsd
-        batch_rmsd_loss = batch_rmsd_loss / float(len(n1))
+        batch_rmsd_loss = batch_rmsd_loss / float(len(batch_lst))
         print("full rmsd: \n", batch_rmsd_loss, pred[0])
         return batch_rmsd_loss
     
