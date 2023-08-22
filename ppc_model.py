@@ -180,7 +180,7 @@ class gnn(torch.nn.Module):
         prob = torch.round(pred)
         batch_lst = dgl.unbatch(batch_graph)
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
-        PP, QQ = get_coords(batch_graph, n1)
+        PP, QQ = self.get_coords(batch_graph, n1)
         mapping = F.gumbel_softmax(attention, tau=1, hard=True)
         QQ = torch.mm(mapping, QQ)
         for i, g in enumerate(batch_lst):
