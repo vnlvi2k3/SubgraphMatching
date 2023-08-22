@@ -174,8 +174,6 @@ class gnn(torch.nn.Module):
 
         a = torch.cumsum(n1, dim=0).tolist()
         a.insert(0,0)
-        b = torch.cumsum(n2, dim=0).tolist()
-        b.insert(0,0)
         
         prob = torch.round(pred)
         batch_lst = dgl.unbatch(batch_graph)
@@ -186,7 +184,7 @@ class gnn(torch.nn.Module):
         QQ = torch.mm(mapping, QQ)
         for i in range(len(a)-1):
             P = PP[a[i]:a[i+1],:]
-            Q = QQ[b[i]:b[i+1],:]
+            Q = QQ[a[i]:a[i+1],:]
             P_mean = P.mean(dim=0)
             Q_mean = Q.mean(dim=0)
             h = (P - P_mean).T@(Q - Q_mean)
