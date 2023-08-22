@@ -171,14 +171,21 @@ class gnn(torch.nn.Module):
     
     def cal_rmsd_loss(self, loss_func ,pred ,batch_graph, attention, n1, n):
         n2 = n - n1
+
+        a = torch.cumsum(n1, dim=0).tolist()
+        a.insert(0,0)
+        b = torch.cumsum(n2, dim=0).tolist()
+        b.insert(0,0)
+        
         prob = torch.round(pred)
         batch_lst = dgl.unbatch(batch_graph)
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
-        # mapping = F.gumbel_softmax(attention, tau=1, hard=True)
+        PP, QQ = get_coords(batch_graph, n1)
+        mapping = F.gumbel_softmax(attention, tau=1, hard=True)
+        QQ = torch.mm(mapping, QQ)
         for i, g in enumerate(batch_lst):
-            P = g.ndata['coords'][:n1[i],:]
-            Q = g.ndata['coords'][n1[i]: 2*n1[i],:]
-            # Q = torch.mm(mapping[i][:n1[i],:n2[i]], Q)
+            P = PP[a[i]:a[i+1],:]
+            Q = QQ[b[i]:b[i+1],:]
             P_mean = P.mean(dim=0)
             Q_mean = Q.mean(dim=0)
             h = (P - P_mean).T@(Q - Q_mean)
@@ -195,6 +202,18 @@ class gnn(torch.nn.Module):
             batch_rmsd_loss = batch_rmsd_loss + rmsd
         batch_rmsd_loss = batch_rmsd_loss / float(len(batch_lst))
         return batch_rmsd_loss
+
+    def get_coords(batch_graph, n1):
+        sub_coords = []
+        graph_coords = []
+        bg_list = dgl.unbatch(batch_graph)
+        for i, g in enumerate(bg_list):
+            sub_coords.append(g.ndata["coords"][:n1[i]])
+            graph_coords.append(g.ndata["coords"][n1[i]:])
+    
+        sub_coords = torch.vstack(sub_feats)
+        graph_coords = torch.vstack(graph_feats)
+        return sub_coords, graph_coords
     
     def calculate_nodes_dst(self, edges):
         pdist = nn.PairwiseDistance(p=2)
