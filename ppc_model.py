@@ -203,7 +203,7 @@ class gnn(torch.nn.Module):
         batch_rmsd_loss = batch_rmsd_loss / float(len(batch_lst))
         return batch_rmsd_loss
 
-    def get_coords(batch_graph, n1):
+    def get_coords(self, batch_graph, n1):
         sub_coords = []
         graph_coords = []
         bg_list = dgl.unbatch(batch_graph)
