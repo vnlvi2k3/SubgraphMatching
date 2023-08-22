@@ -334,6 +334,7 @@ def main(args):
                     else:
                         pred[batch_idx] = torch.tensor([0.], device=device)
             
+            print("loss1, loss2 :", loss_fn(pred, Y), attn_loss, "\n")
             loss = loss_fn(pred, Y) + attn_loss
 
             # Collect loss, true label and predicted label
