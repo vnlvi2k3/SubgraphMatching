@@ -145,7 +145,7 @@ class gnn(torch.nn.Module):
         c_hs = c_hs.view(-1)
         
         attn_loss = self.cal_attn_loss(self.cal_atten_batch2(n1, n, attention), attn_masking)
-        rmsd_loss = self.cal_rmsd_loss(c_hs, graph, attention, n1, n)
+        rmsd_loss = self.cal_rmsd_loss(c_hs, graph, attention, n1)
         # pairdst_loss = self.cal_pairdst_loss(graph)
 
         # note that if you don't use concrete dropout, regularization 1-2 is zero
@@ -167,14 +167,11 @@ class gnn(torch.nn.Module):
 
         return (top / (topabot - top + 1)).sum(0) * self.theta / attention.shape[0]
     
-    def cal_rmsd_loss(self, pred ,batch_graph, attention, n1, n):
-        n2 = n - n1
-
+    def cal_rmsd_loss(self, pred ,batch_graph, attention, n1):
         a = torch.cumsum(n1, dim=0).tolist()
         a.insert(0,0)
         
         prob = torch.round(pred)
-        batch_lst = dgl.unbatch(batch_graph)
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
         PP, QQ = self.get_coords(batch_graph, n1)
         
@@ -194,12 +191,12 @@ class gnn(torch.nn.Module):
             d = torch.sign(torch.det(v@u.T))
             e = torch.tensor([[1,0,0],[0,1,0],[0,0,d]]).to(self.device)
             r = v@e@u.T
-            tt = Q_mean - r@P_mean
-            P_predict = (r@P.T).T + tt
+            trans = Q_mean - r@P_mean
+            P_predict = (r@P.T).T + trans
             rmsd = torch.sqrt(torch.mean(torch.sum((P_predict - Q) ** 2, axis=1)))
             rmsd = rmsd*prob[i]
             batch_rmsd_loss = batch_rmsd_loss + rmsd
-        batch_rmsd_loss = batch_rmsd_loss / (float(len(batch_lst))**2)
+        batch_rmsd_loss = batch_rmsd_loss / float(n1.shape[0])
         return batch_rmsd_loss
 
     def get_coords(self, batch_graph, n1):
@@ -210,44 +207,32 @@ class gnn(torch.nn.Module):
             sub_coords.append(g.ndata["coords"][:n1[i]])
             graph_coords.append(g.ndata["coords"][n1[i]:])
     
-        sub_coords = torch.vstack(sub_coords)
-        graph_coords = torch.vstack(graph_coords)
-        return sub_coords, graph_coords
+        return torch.vstack(sub_coords), torch.vstack(graph_coords)
     
-    def calculate_nodes_dst(self, edges):
-        pdist = nn.PairwiseDistance(p=2)
-        return {"dst": pdist(edges.src["coords"], edges.dst["coords"])}
-    def calculate_updnodes_dst(self, edges):
-        pdist = nn.PairwiseDistance(p=2)
-        return {"upd_dst": pdist(edges.src["upd_coords"], edges.dst["upd_coords"])}
+    # def calculate_nodes_dst(self, edges):
+    #     pdist = nn.PairwiseDistance(p=2)
+    #     return {"dst": pdist(edges.src["coords"], edges.dst["coords"])}
+    # def calculate_updnodes_dst(self, edges):
+    #     pdist = nn.PairwiseDistance(p=2)
+    #     return {"upd_dst": pdist(edges.src["upd_coords"], edges.dst["upd_coords"])}
 
-    def cal_pairdst_loss(self, batch_graph):
-        batch_lst = dgl.unbatch(batch_graph)
-        batch_pairwise_loss = torch.zeros([]).to(self.device) 
-        for i, g in enumerate(batch_lst):
-            g.apply_edges(self.calculate_nodes_dst)
-            g.apply_edges(self.calculate_updnodes_dst)
-            dst_loss = (g.edata["upd_dst"] - g.edata["dst"]).sum()
-            batch_pairwise_loss = batch_pairwise_loss + dst_loss
-        batch_pairwise_loss = batch_pairwise_loss / float(len(batch_lst))
-        return batch_pairwise_loss 
+    # def cal_pairdst_loss(self, batch_graph):
+    #     batch_lst = dgl.unbatch(batch_graph)
+    #     batch_pairwise_loss = torch.zeros([]).to(self.device) 
+    #     for i, g in enumerate(batch_lst):
+    #         g.apply_edges(self.calculate_nodes_dst)
+    #         g.apply_edges(self.calculate_updnodes_dst)
+    #         dst_loss = (g.edata["upd_dst"] - g.edata["dst"]).sum()
+    #         batch_pairwise_loss = batch_pairwise_loss + dst_loss
+    #     batch_pairwise_loss = batch_pairwise_loss / float(len(batch_lst))
+    #     return batch_pairwise_loss 
 
     def get_refined_adjs2(self, X):
         _, attention = self.embede_graph(X)
         return attention
     
-    def cal_atten_batch1(self, n1, n, attention):
-        n2 = n - n1
-        atten_batch = torch.zeros((len(n1), max(n1), max(n2))).to(self.device)
-        i = torch.cumsum(n1, dim=0).tolist()
-        i.insert(0,0)
-        j = torch.cumsum(n2, dim=0).tolist()
-        j.insert(0,0)
-        for k in range(len(n1)):
-            atten_batch[k][:i[k+1]-i[k], : j[k+1]-j[k]] = attention[i[k]:i[k+1],j[k]:j[k+1]] 
-        return atten_batch
-    
-    def cal_atten_batch2(self, n1, n, attention):
+   
+    def cal_atten_batch(self, n1, n, attention):
         n2 = n - n1
         atten_batch = torch.zeros((len(n1), max(n), max(n))).to(self.device)
         i = torch.cumsum(n1, dim=0).tolist()
