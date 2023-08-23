@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ppc_layers import IEGMN_Layer
+from layers1 import IEGMN_Layer
 import dgl
 
 def sum_var_parts(t, lens):
