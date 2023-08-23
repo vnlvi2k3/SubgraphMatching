@@ -96,7 +96,7 @@ class gnn(torch.nn.Module):
             self.zeros = self.zeros.cuda()
 
     def embede_graph(self, X):
-        graph, cross_graph, c_valid, p2 = X
+        graph, cross_graph, c_valid, n1 = X
         X_pt = graph.ndata['coords']
 
         #First: Embede the feature of graph
@@ -104,7 +104,6 @@ class gnn(torch.nn.Module):
         original_coords = graph.ndata["coords"]
         original_feats = c_hs
 
-        batch_sub_numnode = torch.sum(c_valid, axis=1).long()
 
         attention = None
 
@@ -112,29 +111,29 @@ class gnn(torch.nn.Module):
         for k in range(len(self.iegmn_layers)):
             if self.branch == "left":
                 if k == len(self.iegmn_layers) - 1:
-                    X_pt, c_hs1, attention = self.iegmn_layers[k](graph, X_pt, c_hs, original_coords, original_feats, batch_sub_numnode, True)
+                    X_pt, c_hs1, attention = self.iegmn_layers[k](graph, X_pt, c_hs, original_coords, original_feats, n1, True)
                 else:
-                    X_pt, c_hs1 = self.iegmn_layers[k](graph, X_pt, c_hs, original_coords, original_feats, batch_sub_numnode)
+                    X_pt, c_hs1 = self.iegmn_layers[k](graph, X_pt, c_hs, original_coords, original_feats, n1)
                 c_hs1 = - c_hs1
             elif self.branch == "right":
                 c_hs1 = 0
             else:
-                X_pt, c_hs1 = self.iegmn_layers[k](graph, X_pt, c_hs, original_coords, original_feats, batch_sub_numnode)
+                X_pt, c_hs1 = self.iegmn_layers[k](graph, X_pt, c_hs, original_coords, original_feats, n1)
 
             if self.branch == "left":
                 c_hs2 = 0
             else:
                 if k == len(self.iegmn_layers) - 1:
-                    X_pt, c_hs2, attention = self.iegmn_layers[k](cross_graph, X_pt, c_hs, original_coords, original_feats, batch_sub_numnode, True)
+                    X_pt, c_hs2, attention = self.iegmn_layers[k](cross_graph, X_pt, c_hs, original_coords, original_feats, n1, True)
                 else:
-                    X_pt, c_hs2 = self.iegmn_layers[k](cross_graph, X_pt, c_hs, original_coords, original_feats, batch_sub_numnode)
+                    X_pt, c_hs2 = self.iegmn_layers[k](cross_graph, X_pt, c_hs, original_coords, original_feats, n1)
 
             c_hs = c_hs2 - c_hs1
             c_hs = F.dropout(c_hs, p=self.dropout_rate, training=self.training)
 
-        c_hs = c_hs * p2.unsqueeze(-1).repeat(1, c_hs.size(-1))
+        c_hs = c_hs * c_valid.unsqueeze(-1).repeat(1, c_hs.size(-1))
         c_hs = sum_var_parts(c_hs, graph.batch_num_nodes())
-        c_hs = c_hs / batch_sub_numnode.unsqueeze(-1).repeat(1, c_hs.size(-1))
+        c_hs = c_hs / n1.unsqueeze(-1).repeat(1, c_hs.size(-1))
 
         #Update coords node's data for graph and cross graph
         # graph.ndata["upd_coords"] = X_pt
@@ -160,15 +159,14 @@ class gnn(torch.nn.Module):
 
     def forward(self, X, attn_masking=None, training=False):
         # embede a graph to a vector
-        graph, cross_graph, c_valid, p2 = X
-        n1 = torch.sum(c_valid, axis=1).long()
+        graph, cross_graph, c_valid, n1 = X
         n = cross_graph.batch_num_nodes()
         c_hs, graph, attention = self.embede_graph(X)
 
         # fully connected NN
         c_hs = self.fully_connected(c_hs)
         c_hs = c_hs.view(-1)
-        loss_func = nn.MSELoss()
+        
         attn_loss = self.cal_attn_loss(self.cal_atten_batch2(n1, n, attention), attn_masking)
         rmsd_loss = self.cal_rmsd_loss(loss_func ,c_hs, graph, attention, n1, n)
         # pairdst_loss = self.cal_pairdst_loss(graph)
