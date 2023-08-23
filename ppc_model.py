@@ -145,6 +145,7 @@ class gnn(torch.nn.Module):
         c_hs = c_hs.view(-1)
         
         attn_loss = self.cal_attn_loss(self.cal_atten_batch2(n1, n, attention), attn_masking)
+        rmsd_loss = self.cal_rmsd_loss(c_hs, graph, attention, n1, n)
         # pairdst_loss = self.cal_pairdst_loss(graph)
 
         # note that if you don't use concrete dropout, regularization 1-2 is zero
@@ -166,7 +167,7 @@ class gnn(torch.nn.Module):
 
         return (top / (topabot - top + 1)).sum(0) * self.theta / attention.shape[0]
     
-    def cal_rmsd_loss(self, loss_func ,pred ,batch_graph, attention, n1, n):
+    def cal_rmsd_loss(self, pred ,batch_graph, attention, n1, n):
         n2 = n - n1
 
         a = torch.cumsum(n1, dim=0).tolist()
