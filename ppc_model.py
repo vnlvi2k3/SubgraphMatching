@@ -197,9 +197,9 @@ class gnn(torch.nn.Module):
             tt = Q_mean - r@P_mean
             P_predict = (r@P.T).T + tt
             rmsd = torch.sqrt(torch.mean(torch.sum((P_predict - Q) ** 2, axis=1)))
-            rmsd = rmsd*pred[i]
+            rmsd = rmsd*prob[i]
             batch_rmsd_loss = batch_rmsd_loss + rmsd
-        batch_rmsd_loss = batch_rmsd_loss / float(len(batch_lst))
+        batch_rmsd_loss = batch_rmsd_loss / (float(len(batch_lst))**2)
         return batch_rmsd_loss
 
     def get_coords(self, batch_graph, n1):
