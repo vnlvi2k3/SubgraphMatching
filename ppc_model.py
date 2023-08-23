@@ -173,7 +173,7 @@ class gnn(torch.nn.Module):
         a = torch.cumsum(n1, dim=0).tolist()
         a.insert(0,0)
         
-        # prob = torch.round(pred)
+        prob = torch.round(pred)
         batch_lst = dgl.unbatch(batch_graph)
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
         PP, QQ = self.get_coords(batch_graph, n1)
