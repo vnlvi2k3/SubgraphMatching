@@ -89,14 +89,12 @@ class BaseDataset(Dataset):
         src_lst_cross, dst_lst_cross = np.where(agg_adj2==1)
         e_cross = [(i,j) for i,j in zip(src_lst_cross, dst_lst_cross)]
         graph_pt_cross = nx.Graph(e_cross)
-        X_pt = []
+        coors = []
         for id in m1.nodes:
-            X_pt.append(m1.nodes[id]["coords"])
+            coors.append(m1.nodes[id]["coords"])
         for id in m2.nodes:
-            X_pt.append(m2.nodes[id]["coords"])
-        X_pt = np.vstack(X_pt)
-        # graph_pt = add_attributes(graph_pt, X_pt, H_pt)
-        # graph_pt_cross = add_attributes(graph_pt_cross, X_pt, H_pt)
+            coors.append(m2.nodes[id]["coords"])
+        coors = np.vstack(coors)
 
         # node indice for aggregation
         valid = np.zeros((n1 + n2,))
@@ -122,11 +120,11 @@ class BaseDataset(Dataset):
             "graph": graph_pt,
             "cross_graph": graph_pt_cross,
             "H": H,
+            "C": coors,
             "Y": Y,
             "V": valid,
             "mapping": mapping_matrix,
             "same_label": same_label_matrix,
-            "X_pt": X_pt,
         }
 
         return sample
@@ -159,36 +157,34 @@ def collate_fn(batch):
     M = np.zeros((len(batch), max_natoms, max_natoms))
     S = np.zeros((len(batch), max_natoms, max_natoms))
     Y = np.zeros((len(batch),))
-    V = np.zeros((len(batch), max_natoms))
 
     graph = []
     cross_graph = []
-    X_pt = []
-    H_pt = []
-    p2 = []
+    C = []
+    H = []
+    V = []
+    N1 = []
 
     for i in range(len(batch)):
         natom = len(batch[i]["H"])
-        p2.append(batch[i]["V"])
+        
 
         M[i, :natom, :natom] = batch[i]["mapping"]
         S[i, :natom, :natom] = batch[i]["same_label"]
         Y[i] = batch[i]["Y"]
-        V[i, :natom] = batch[i]["V"]
         graph.append(batch[i]["graph"])
         cross_graph.append(batch[i]["cross_graph"])
-        X_pt.append(batch[i]["X_pt"])
-        H_pt.append(batch[i]["H"])
+        C.append(batch[i]["C"])
+        H.append(batch[i]["H"])
+        V.append(batch[i]["V"])
+        N1.append(np.sum(batch[i]["V"]))
 
     M = torch.from_numpy(M).float()
     S = torch.from_numpy(S).float()
     Y = torch.from_numpy(Y).float()
-    V = torch.from_numpy(V).float()
-    X_pt = np.vstack(X_pt)
-    H_pt = np.vstack(H_pt)
-    X_pt = torch.from_numpy(X_pt).float()
-    H_pt = torch.from_numpy(H_pt).float()
-    p2 = np.concatenate(p2, axis=0)
-    p2 = torch.from_numpy(p2).float()
+    C = torch.from_numpy(np.vstack(C)).float()
+    H = torch.from_numpy(np.vstack(H)).float()
+    V = torch.from_numpy(np.concatenate(V)).float()
+    N1 = torch.tensor(N1, dtype=torch.long)
 
-    return graph, cross_graph, M, S, Y, V, X_pt, H_pt, p2
+    return graph, cross_graph, M, S, Y, V, N1, C, H
