@@ -8,9 +8,9 @@ import torch
 import torch.nn as nn
 import utils
 from collections import defaultdict
-from ppc_dataset import BaseDataset, collate_fn, UnderSampler
+from dataset1 import BaseDataset, collate_fn, UnderSampler
 from kabsch import kabsch_rmsd
-from ppc_model import gnn
+from model1 import gnn
 from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
