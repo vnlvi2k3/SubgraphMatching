@@ -173,7 +173,7 @@ class gnn(torch.nn.Module):
         a = torch.cumsum(n1, dim=0).tolist()
         a.insert(0,0)
         
-        prob = torch.round(pred)
+        # prob = torch.round(pred)
         batch_lst = dgl.unbatch(batch_graph)
         batch_rmsd_loss = torch.zeros([]).to(self.device)  
         PP, QQ = self.get_coords(batch_graph, n1)
@@ -197,7 +197,7 @@ class gnn(torch.nn.Module):
             tt = Q_mean - r@P_mean
             P_predict = (r@P.T).T + tt
             rmsd = torch.sqrt(torch.mean(torch.sum((P_predict - Q) ** 2, axis=1)))
-            rmsd = rmsd*prob[i]
+            rmsd = rmsd*pred[i]
             batch_rmsd_loss = batch_rmsd_loss + rmsd
         batch_rmsd_loss = batch_rmsd_loss / float(len(batch_lst))
         return batch_rmsd_loss
