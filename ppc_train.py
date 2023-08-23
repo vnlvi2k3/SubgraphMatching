@@ -205,26 +205,30 @@ def main(args):
         for sample in tqdm(train_dataloader):
             model.zero_grad()
 
-            graph, cross_graph, M, S, Y, V, X_pt, H_pt, p2 = sample
+            graph, cross_graph, M, S, Y, V, N1, C, H = sample
             graph = [dgl.from_networkx(item) for item in graph]
             cross_graph = [dgl.from_networkx(item) for item in cross_graph]
             graph = dgl.batch(graph)
             cross_graph = dgl.batch(cross_graph)
-            graph.ndata["coords"] = X_pt
-            graph.ndata["feat"] = H_pt
-            cross_graph.ndata["coords"] = X_pt
-            cross_graph.ndata["feat"] = H_pt
+            
+            graph.ndata["coords"] = C
+            graph.ndata["feat"] = H
+            cross_graph.ndata["coords"] = C
+            cross_graph.ndata["feat"] = H
 
-            M = M.to(device)
-            S = S.to(device)
-            Y = Y.to(device)
-            V = V.to(device) 
-            p2 = p2.to(device)
-            graph = graph.to(device)
-            cross_graph = cross_graph.to(device)
+            graph, cross_graph, M, S, Y, V, N1 = (
+                graph.to(device),
+                cross_graph.to(device),
+                M.to(device),
+                S.to(device),
+                Y.to(device),
+                V.to(device),
+                N1.to(device)
+            )
+            
             # Train neural network
             pred, attn_loss, rmsd_loss = model(
-                X=(graph, cross_graph, V, p2), attn_masking=(M, S), training=True
+                X=(graph, cross_graph, V, N1), attn_masking=(M, S), training=True
             )
                         
             loss = loss_fn(pred, Y) + attn_loss + rmsd_loss
@@ -241,26 +245,30 @@ def main(args):
 
         for sample in tqdm(test_dataloader):
 
-            graph, cross_graph, M, S, Y, V, X_pt, H_pt, p2 = sample
+            graph, cross_graph, M, S, Y, V, N1, C, H = sample
             graph = [dgl.from_networkx(item) for item in graph]
             cross_graph = [dgl.from_networkx(item) for item in cross_graph]
             graph = dgl.batch(graph)
             cross_graph = dgl.batch(cross_graph)
-            graph.ndata["coords"] = X_pt
-            graph.ndata["feat"] = H_pt
-            cross_graph.ndata["coords"] = X_pt
-            cross_graph.ndata["feat"] = H_pt
+            
+            graph.ndata["coords"] = C
+            graph.ndata["feat"] = H
+            cross_graph.ndata["coords"] = C
+            cross_graph.ndata["feat"] = H
 
-            M = M.to(device)
-            S = S.to(device)
-            Y = Y.to(device)
-            V = V.to(device) 
-            p2 = p2.to(device)
-            graph = graph.to(device)
-            cross_graph = cross_graph.to(device)
+            graph, cross_graph, M, S, Y, V, N1 = (
+                graph.to(device),
+                cross_graph.to(device),
+                M.to(device),
+                S.to(device),
+                Y.to(device),
+                V.to(device),
+                N1.to(device)
+            )
+            
             # Train neural network
             pred, attn_loss, rmsd_loss = model(
-                X=(graph, cross_graph, V, p2), attn_masking=(M, S), training=True
+                X=(graph, cross_graph, V, N1), attn_masking=(M, S), training=True
             )
                         
             loss = loss_fn(pred, Y) + attn_loss + rmsd_loss
